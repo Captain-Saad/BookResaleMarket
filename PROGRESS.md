@@ -1,8 +1,8 @@
 # PROGRESS
 
 ## Current: S0-01 — Repo hygiene + Next.js scaffold + minimal landing page
-Step: writing
-Status: in-progress (stacked on S0-00 / PR #1, which is not merged yet)
+Step: awaiting UNDERSTOOD
+Status: in-progress (pushed; user opens PR from https://github.com/Captain-Saad/BookResaleMarket/compare/main...feat/s0-01-nextjs-scaffold; stacked on S0-00 / PR #1, which is not merged yet)
 
 ## PR tracker
 | PR-ID | Title | Branch | PR URL | Merged | UNDERSTOOD |
@@ -11,7 +11,7 @@ Status: in-progress (stacked on S0-00 / PR #1, which is not merged yet)
 | S0-01 | Repo hygiene + Next.js scaffold + minimal landing page | feat/s0-01-nextjs-scaffold | pending | no | no |
 
 ## Today (2026-10-15)
-S0-01: commits 1/2-3 · files in PR 10/12 · PR pending
+S0-01: commits 2/2-3 · files in PR 12/12 (+ lockfile `apps/web/pnpm-lock.yaml`) · PR pending
 (S0-00 earlier today: 3 commits, 6 files, PR #1.)
 
 ## Slice checklist (S0)
@@ -23,7 +23,7 @@ S0-01: commits 1/2-3 · files in PR 10/12 · PR pending
 None yet.
 
 ## Daily log
-- 2026-10-15 (S0-01): Branch `feat/s0-01-nextjs-scaffold` from `feat/s0-00-docs` (stacked; PR targets `main`). Commit 1: hand-written Next.js 16.4.1 app in `apps/web` (no `create-next-app` dump), Tailwind v4 via PostCSS, root `.gitignore` gains `*.tsbuildinfo` + `next-env.d.ts`. Verified with `pnpm build` (types OK, `/` static) and `pnpm dev` + `curl /` (200, title "BookLoop", no `X-Powered-By`).
+- 2026-10-15 (S0-01): Branch `feat/s0-01-nextjs-scaffold` from `feat/s0-00-docs` (stacked; PR targets `main`). Commit 1: hand-written Next.js 16.4.1 app in `apps/web` (no `create-next-app` dump), Tailwind v4 via PostCSS, root `.gitignore` gains `*.tsbuildinfo` + `next-env.d.ts`. Verified with `pnpm build` (types OK, `/` static) and `pnpm dev` + `curl /` (200, title "BookLoop", no `X-Powered-By`). Commit 2: root `README.md` + `.github/pull_request_template.md`. Teach note `learn/S0-01/teach.md` written.
 - 2026-10-15 (S0-00 follow-up): Correction to the entry below: the force-push to the old `main` was blocked by its ruleset, so the user deleted the GitHub repo and recreated it empty. `main` (empty root commit) and `feat/s0-00-docs` were pushed to the new repo; PR #1 opened by the user. Old PRs and history are gone. `UNDERSTOOD S0-00` received.
 - 2026-10-15: S0-00. `git init` (default branch `main`, repo-local author Captain-Saad), branch `feat/s0-00-docs`. Commit 1: root `.gitignore` (`/learn/`, `.env*` with `!.env.example`, `node_modules/`, `.next/`, `__pycache__/`, `.venv/`), verified with `git check-ignore`. Commit 2: the five docs. Teach note `learn/S0-00/teach.md` + `learn/INDEX.md` written (gitignored). `gh` CLI is not installed. Old remote wiped on user's request: `main` replaced by one empty root commit, old branches `release` and `feat/s1-auth` deleted. Branch rebased onto the new `main` and pushed; commit 3 updates this file.
 - 2026-10-14: Project restarted. Docs prepared (`CLAUDE.md`, `ROADMAP.md`, `backend.md`, `frontend.md`). New rules: ≤ 12 files per PR, one PR per day, teach note per PR in gitignored `learn/`, `UNDERSTOOD` gate. No code yet.
