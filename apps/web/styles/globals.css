@@ -1,0 +1,4 @@
+/* Global stylesheet, imported once by app/layout.tsx.
+   `@import "tailwindcss"` pulls in Tailwind's base reset, theme and utilities;
+   design tokens arrive in S0-02 (styles/tokens.css). */
+@import "tailwindcss";

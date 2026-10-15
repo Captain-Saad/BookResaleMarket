@@ -12,3 +12,7 @@ node_modules/
 # Python
 __pycache__/
 .venv/
+
+# TypeScript / Next.js generated files
+*.tsbuildinfo
+next-env.d.ts
