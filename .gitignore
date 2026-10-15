@@ -1,0 +1,14 @@
+# Personal teaching notes (CLAUDE.md §4) — never committed
+/learn/
+
+# Secrets and local environment files (commit only *.env.example)
+.env*
+!.env.example
+
+# Node / Next.js
+node_modules/
+.next/
+
+# Python
+__pycache__/
+.venv/
