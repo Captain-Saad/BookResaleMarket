@@ -87,28 +87,26 @@ Out of scope v1: non-book items, rental/subscription, in-app chat (order notific
 | Testing | pytest, pytest-asyncio, httpx, testcontainers-postgres (real PG, no SQLite), hypothesis for money math, `respx` for HTTP mocks |
 | Quality | ruff, mypy --strict, pre-commit, `pip-audit`/`uv pip audit`, `bandit`, gitleaks |
 | CI | GitHub Actions: lint → types → tests (PG + Redis services) → migration check → security scans |
-| Monorepo | `pnpm` workspaces for web; `uv` for api |
+| Monorepo | `frontend/` (pnpm) and `backend/` (`uv`) in one repo |
 
 Repo layout:
 ```
 bookloop/
-├─ CLAUDE.md                 # 5 lines: "Read backend.md / frontend.md / PROGRESS.md first"
-├─ backend.md  frontend.md  PROGRESS.md
+├─ docs/                     # ROADMAP.md, backend.md, frontend.md (PROGRESS.md local-only)
 ├─ Makefile                  # check, test, dev, migrate, seed, openapi
 ├─ docker-compose.yml        # redis, (optional local pg), mailhog
 ├─ supabase/                 # config.toml, seed notes, storage bucket policies
 ├─ packages/api-client/      # generated TS client from OpenAPI (frontend consumes)
-├─ apps/
-│  ├─ web/                   # Next.js (see frontend.md)
-│  └─ api/
-│     ├─ alembic/ …
-│     ├─ app/
-│     │  ├─ main.py
-│     │  ├─ core/            # config, db, security, deps, errors, logging, rate_limit, idempotency, money, clock
-│     │  ├─ modules/<name>/  # models.py schemas.py repository.py service.py router.py (+ state_machine.py) 
-│     │  ├─ integrations/<provider>/  # base.py (Protocol), real.py, fake.py
-│     │  └─ workers/         # arq tasks + cron
-│     └─ tests/              # unit/ integration/ e2e/ factories/
+├─ frontend/                # Next.js (see frontend.md)
+└─ backend/                 # FastAPI
+   ├─ alembic/ …
+   ├─ app/                  # Python package
+   │  ├─ main.py
+   │  ├─ core/            # config, db, security, deps, errors, logging, rate_limit, idempotency, money, clock
+   │  ├─ modules/<name>/  # models.py schemas.py repository.py service.py router.py (+ state_machine.py) 
+   │  ├─ integrations/<provider>/  # base.py (Protocol), real.py, fake.py
+   │  └─ workers/         # arq tasks + cron
+   └─ tests/               # unit/ integration/ e2e/ factories/
 ```
 Dependency direction: `router → service → repository → models`. Services never import routers. Modules talk through service interfaces or domain events, not each other's tables.
 

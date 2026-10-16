@@ -1,6 +1,6 @@
 # BookLoop
 
-A marketplace for buying and selling used books. ("BookLoop" is a placeholder name, set in `apps/web/lib/constants.ts`.)
+A marketplace for buying and selling used books. ("BookLoop" is a placeholder name, set in `frontend/lib/constants.ts`.)
 
 ## Repository layout
 
@@ -10,21 +10,21 @@ A marketplace for buying and selling used books. ("BookLoop" is a placeholder na
 │   ├── ROADMAP.md     # ordered list of PRs, slice by slice
 │   ├── backend.md     # backend domain, architecture, security, modules M0–M13
 │   └── frontend.md    # design system, responsive rules, modules F0–F13
-└── apps/
-    └── web/           # Next.js frontend (App Router, TypeScript, Tailwind)
+└── frontend/          # Next.js app (App Router, TypeScript, Tailwind)
+    └── app/           # routes: Next.js requires this folder name; each subfolder is a URL segment
 ```
 
-The FastAPI backend (`apps/api`) arrives later in slice S0 (see `docs/ROADMAP.md`).
+The FastAPI backend arrives later in slice S0 as `backend/` (see `docs/ROADMAP.md`).
 
 ## Requirements
 
 - Node.js ≥ 20.9
-- pnpm 10 (`corepack enable` picks the version pinned in `apps/web/package.json`)
+- pnpm 10 (`corepack enable` picks the version pinned in `frontend/package.json`)
 
 ## Run the web app
 
 ```bash
-cd apps/web
+cd frontend
 pnpm install
 pnpm dev      # http://localhost:3000
 ```
@@ -37,7 +37,7 @@ pnpm build && pnpm start
 
 ## Environment variables
 
-Each app documents its variables in its own committed `.env.example` (e.g. `apps/web/.env.example`). Copy it to `.env.local` in the same folder and fill in real values. Real `.env*` files are gitignored and must never be committed.
+Each app documents its variables in its own committed `.env.example` (e.g. `frontend/.env.example`). Copy it to `.env.local` in the same folder and fill in real values. Real `.env*` files are gitignored and must never be committed.
 
 ## Contributing
 

@@ -32,7 +32,7 @@
 
 Structure:
 ```
-apps/web/
+frontend/
 ├─ app/
 │  ├─ (public)/        # home, search, listing detail, legal
 │  ├─ (auth)/          # login, register, verify, reset
