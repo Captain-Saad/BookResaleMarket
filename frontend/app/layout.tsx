@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import AuroraStage from "@/components/stage/aurora-stage";
-import ThemeToggle from "@/components/theme/theme-toggle";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/constants";
 import { fontVariables } from "@/lib/fonts";
 import { THEME_SCRIPT } from "@/lib/theme";
@@ -19,7 +18,6 @@ const RootLayout = ({ children }: Readonly<{ children: ReactNode }>) => (
     </head>
     <body className="min-h-dvh antialiased">
       <AuroraStage />
-      <ThemeToggle />
       {children}
     </body>
   </html>

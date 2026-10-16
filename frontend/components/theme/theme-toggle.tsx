@@ -21,7 +21,7 @@ const ThemeToggle = () => {
       type="button"
       onClick={toggle}
       aria-label="Toggle color theme"
-      className="glass glass--2 fixed end-4 top-4 z-10 inline-flex size-11 items-center justify-center rounded-full text-ink-1"
+      className="inline-flex size-11 items-center justify-center rounded-full text-ink-1 transition-colors hover:bg-glass-3"
     >
       <Sun aria-hidden="true" className="hidden size-5 dark:block" />
       <Moon aria-hidden="true" className="size-5 dark:hidden" />

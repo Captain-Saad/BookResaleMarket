@@ -20,6 +20,7 @@
   --glass-border: rgba(255, 255, 255, 0.18);
   --glass-highlight: rgba(255, 255, 255, 0.32);
   --scrim: rgba(7, 10, 18, 0.55);
+  --on-brand: #070a12;
 }
 
 :root[data-theme="light"] {
@@ -54,6 +55,8 @@
   --color-danger: var(--danger);
   --color-info: var(--info);
   --color-scrim: var(--scrim);
+  --color-on-brand: var(--on-brand);
+  --color-glass-3: var(--glass-3);
   --font-display: var(--font-fraunces);
   --font-sans: var(--font-geist);
   --font-mono: var(--font-geist-mono);
