@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import type { Select as SelectPrimitive } from "radix-ui";
+import type { ComponentProps, ReactNode } from "react";
 import type { PRIMARY_NAV } from "@/lib/constants";
 
 export enum Theme {
@@ -57,6 +58,16 @@ export type BottomTabBarProps = { navItems: readonly PrimaryNavItem[]; label: st
 export type NavDrawerProps = { navLinks: readonly NavLink[]; labels: NavLabels };
 
 export type PlaceholderPageProps = { title: string; description: string; homeLink: NavLink };
+
+export type SelectOption = { value: string; label: string };
+
+export type SelectProps = ComponentProps<typeof SelectPrimitive.Root> & {
+  id?: string;
+  options: readonly SelectOption[];
+  placeholder?: string;
+  className?: string;
+  "aria-invalid"?: boolean;
+};
 
 export type ErrorPageProps = {
   error: Error & { digest?: string };

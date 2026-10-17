@@ -121,6 +121,15 @@ export const NAV_LABELS = {
   menuTitle: "Menu",
 } as const;
 
+export const BADGE_DOT_COLORS = {
+  neutral: "bg-ink-3",
+  brand: "bg-brand",
+  success: "bg-success",
+  warning: "bg-warning",
+  danger: "bg-danger",
+  info: "bg-info",
+} as const;
+
 export const BACK_HOME_LINK = { href: ROUTES.home, label: "Back to home" } as const;
 
 export const ERROR_PAGE = {
