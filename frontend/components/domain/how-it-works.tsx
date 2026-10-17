@@ -4,7 +4,7 @@ const HowItWorks = () => (
   <section
     id="how-it-works"
     aria-labelledby="how-it-works-title"
-    className="mx-auto flex w-full max-w-6xl scroll-mt-24 flex-col gap-8"
+    className="mx-auto flex w-full max-w-page scroll-mt-24 flex-col gap-8"
   >
     <h2 id="how-it-works-title" className="text-center font-display text-h2 text-ink-1">
       How it works

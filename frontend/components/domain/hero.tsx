@@ -1,7 +1,7 @@
 import { HERO } from "@/lib/constants";
 
 const Hero = () => (
-  <section className="glass glass--2 mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-6 py-12 text-center sm:px-12 sm:py-16">
+  <section className="glass glass--2 mx-auto flex w-full max-w-4xl flex-col items-center gap-6 px-6 py-12 text-center sm:px-12 sm:py-16">
     <h1 className="font-display text-display font-semibold tracking-tight text-ink-1">
       {HERO.title}
     </h1>

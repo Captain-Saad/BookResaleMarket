@@ -4,7 +4,7 @@ import { NAV_LINKS, SITE_NAME } from "@/lib/constants";
 
 const SiteHeader = () => (
   <header className="sticky top-0 z-20 px-4 pt-4">
-    <div className="glass glass--2 mx-auto flex max-w-6xl items-center justify-between gap-4 py-2 ps-5 pe-2">
+    <div className="glass glass--2 mx-auto flex max-w-page items-center justify-between gap-4 py-2 ps-5 pe-2">
       <Link href="/" className="font-display text-h3 font-semibold text-ink-1">
         {SITE_NAME}
       </Link>

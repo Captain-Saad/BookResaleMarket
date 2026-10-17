@@ -9,7 +9,7 @@ const HomePage = () => (
     <section
       id="shelves"
       aria-labelledby="shelves-title"
-      className="mx-auto flex w-full max-w-6xl scroll-mt-24 flex-col gap-8"
+      className="mx-auto flex w-full max-w-page scroll-mt-24 flex-col gap-8"
     >
       <h2 id="shelves-title" className="text-center font-display text-h2 text-ink-1">
         Featured shelves
