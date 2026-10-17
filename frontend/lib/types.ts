@@ -1,10 +1,16 @@
-import type { Select as SelectPrimitive } from "radix-ui";
-import type { ComponentProps, ReactNode } from "react";
+import type { Dialog, Select as SelectPrimitive, Toast as ToastPrimitive } from "radix-ui";
+import type { ComponentProps, ReactElement, ReactNode } from "react";
 import type { PRIMARY_NAV } from "@/lib/constants";
 
 export enum Theme {
   Dark = "dark",
   Light = "light",
+}
+
+export enum ToastTone {
+  Neutral = "neutral",
+  Success = "success",
+  Danger = "danger",
 }
 
 export type ChildrenProps = Readonly<{ children: ReactNode }>;
@@ -67,6 +73,31 @@ export type SelectProps = ComponentProps<typeof SelectPrimitive.Root> & {
   placeholder?: string;
   className?: string;
   "aria-invalid"?: boolean;
+};
+
+type OverlayProps = ComponentProps<typeof Dialog.Root> & {
+  trigger?: ReactNode;
+  title: string;
+  description?: string;
+  closeLabel: string;
+  className?: string;
+};
+
+export type ModalProps = OverlayProps;
+
+export type DrawerProps = OverlayProps & { side?: "end" | "bottom" };
+
+export type ToastProps = ComponentProps<typeof ToastPrimitive.Root> & {
+  title: string;
+  description?: string;
+  dismissLabel: string;
+  tone?: ToastTone;
+};
+
+export type TooltipProps = {
+  content: ReactNode;
+  children: ReactElement;
+  side?: "top" | "right" | "bottom" | "left";
 };
 
 export type ErrorPageProps = {

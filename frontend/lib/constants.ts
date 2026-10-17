@@ -1,5 +1,7 @@
 import { Package, Search, Tag, User } from "lucide-react";
 
+import { ToastTone } from "@/lib/types";
+
 export const SITE_NAME = "BookLoop";
 export const SITE_DESCRIPTION = "Buy and sell used books.";
 
@@ -129,6 +131,14 @@ export const BADGE_DOT_COLORS = {
   danger: "bg-danger",
   info: "bg-info",
 } as const;
+
+export const TOAST_TONE_BORDERS = {
+  [ToastTone.Neutral]: "border-s-glass-border",
+  [ToastTone.Success]: "border-s-success",
+  [ToastTone.Danger]: "border-s-danger",
+} as const;
+
+export const OVERLAY_LABELS = { close: "Close", dismiss: "Dismiss" } as const;
 
 export const BACK_HOME_LINK = { href: ROUTES.home, label: "Back to home" } as const;
 
