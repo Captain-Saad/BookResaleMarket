@@ -14,6 +14,9 @@ node_modules/
 # Python
 __pycache__/
 .venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # TypeScript / Next.js generated files
 *.tsbuildinfo
