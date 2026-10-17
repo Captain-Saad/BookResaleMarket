@@ -4,3 +4,4 @@ next-env.d.ts
 playwright-report/
 test-results/
 storybook-static/
+public/mockServiceWorker.js

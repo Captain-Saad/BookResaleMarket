@@ -118,3 +118,8 @@ test.describe("navigation", () => {
     });
   }
 });
+
+test("the dev test console is not part of production builds", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Open dev test console" })).toHaveCount(0);
+});
