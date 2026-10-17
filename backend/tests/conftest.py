@@ -9,5 +9,6 @@ from app.main import create_app
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
-    with TestClient(create_app(Settings(env="test", log_json=False))) as test_client:
+    settings = Settings(_env_file=None, env="test", log_json=False)
+    with TestClient(create_app(settings), raise_server_exceptions=False) as test_client:
         yield test_client

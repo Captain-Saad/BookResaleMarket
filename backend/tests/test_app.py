@@ -2,6 +2,7 @@ import uuid
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 from structlog.contextvars import merge_contextvars
 from structlog.testing import capture_logs
 
@@ -51,7 +52,13 @@ def test_access_log_includes_the_request_id(client: TestClient) -> None:
 
 
 def test_docs_are_hidden_in_production() -> None:
-    with TestClient(create_app(Settings(env="production"))) as production_client:
+    settings = Settings(
+        _env_file=None,
+        env="production",
+        database_url="postgresql://user:secret@localhost:6543/db",
+        database_direct_url="postgresql://user:secret@localhost:5432/db",
+    )
+    with TestClient(create_app(settings)) as production_client:
         assert production_client.get("/docs").status_code == 404
         assert production_client.get("/healthz").status_code == 200
 
@@ -59,6 +66,24 @@ def test_docs_are_hidden_in_production() -> None:
 def test_settings_read_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("BOOKLOOP_ENV", "production")
     monkeypatch.setenv("BOOKLOOP_LOG_LEVEL", "WARNING")
-    settings = Settings()
+    monkeypatch.setenv("BOOKLOOP_DATABASE_URL", "postgresql://u:p@h:6543/db")
+    monkeypatch.setenv("BOOKLOOP_DATABASE_DIRECT_URL", "postgresql://u:p@h:5432/db")
+    settings = Settings(_env_file=None)
     assert settings.is_production
     assert settings.log_level == "WARNING"
+
+
+def test_settings_fail_fast_without_database_outside_tests() -> None:
+    with pytest.raises(ValidationError, match="BOOKLOOP_DATABASE_URL"):
+        Settings(_env_file=None, env="development")
+
+
+def test_database_urls_are_secret() -> None:
+    settings = Settings(
+        _env_file=None,
+        env="test",
+        database_url="postgresql://user:hunter2@host:6543/db",
+    )
+    assert "hunter2" not in repr(settings)
+    assert settings.database_url is not None
+    assert "hunter2" in settings.database_url.get_secret_value()

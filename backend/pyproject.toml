@@ -4,8 +4,11 @@ version = "0.1.0"
 description = "BookLoop backend (FastAPI)"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic==1.20.0",
+    "asyncpg==0.32.0",
     "fastapi==0.143.3",
     "pydantic-settings==2.16.0",
+    "sqlalchemy[asyncio]==2.1.5",
     "structlog==26.1.0",
     "uvicorn[standard]==0.54.0",
 ]
@@ -13,6 +16,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "httpx2==2.13.1",
+    "hypothesis==6.170.1",
     "mypy==2.4.0",
     "pytest==9.1.1",
     "ruff==0.17.1",
@@ -35,4 +39,5 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-q"
+addopts = "-q -m 'not db'"
+markers = ["db: needs the real database from backend/.env (run with: uv run pytest -m db)"]
