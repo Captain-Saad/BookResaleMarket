@@ -7,7 +7,7 @@ export const THEME_TOGGLE_LABEL = "Toggle color theme";
 
 export const OPEN_LIBRARY_COVER_URL = "https://covers.openlibrary.org/b/id";
 
-export const COVER_SIZES = "(min-width: 64rem) 144px, (min-width: 30rem) 128px, 112px";
+export const COVER_SIZES = "(min-width: 64rem) 176px, (min-width: 30rem) 144px, 128px";
 
 export const AURORA_ORB_CLASSES =
   "absolute aspect-square rounded-full blur-[80px] motion-reduce:animate-none";
