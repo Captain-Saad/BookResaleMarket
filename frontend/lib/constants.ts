@@ -1,3 +1,5 @@
+import { Package, Search, Tag, User } from "lucide-react";
+
 export const SITE_NAME = "BookLoop";
 export const SITE_DESCRIPTION = "Buy and sell used books.";
 
@@ -14,10 +16,27 @@ export const AURORA_ORB_CLASSES =
 
 export const SECTION_IDS = { shelves: "shelves", howItWorks: "how-it-works" } as const;
 
-export const NAV_LINKS = [
-  { href: `#${SECTION_IDS.shelves}`, label: "Browse" },
-  { href: `#${SECTION_IDS.howItWorks}`, label: "How it works" },
+export const ROUTES = { home: "/", search: "/search" } as const;
+
+export const PRIMARY_NAV = [
+  { id: "browse", href: ROUTES.search, label: "Browse" },
+  { id: "sell", href: "/sell", label: "Sell" },
+  { id: "orders", href: "/orders", label: "Orders" },
+  { id: "account", href: "/login", label: "Account" },
 ] as const;
+
+export const NAV_ICONS = { browse: Search, sell: Tag, orders: Package, account: User } as const;
+
+export const PLACEHOLDER_PAGES = {
+  search: { title: "Search", description: "Search and filters arrive in slice S3." },
+  login: { title: "Sign in", description: "Sign-in and registration arrive in slice S1." },
+  orders: { title: "Your orders", description: "Order history and tracking arrive in slice S8." },
+  sell: { title: "Sell a book", description: "The listing wizard arrives in slice S2." },
+  warehouse: { title: "Warehouse console", description: "The staff console arrives in slice S6." },
+  courier: { title: "Courier app", description: "Pickup and delivery tasks arrive in slice S7." },
+  admin: { title: "Admin console", description: "Operations and disputes arrive in slice S10." },
+  notFound: { title: "Page not found", description: "This page doesn't exist or has moved." },
+} as const;
 
 export const HERO = {
   title: "Buy and sell used books",
@@ -93,3 +112,19 @@ export const HOW_IT_WORKS_STEPS = [
       "The buyer's payment is held until they confirm the book arrived, or the post-delivery window passes, then released to the seller.",
   },
 ] as const;
+
+export const NAV_LABELS = {
+  main: "Main",
+  search: "Search",
+  openMenu: "Open menu",
+  closeMenu: "Close menu",
+  menuTitle: "Menu",
+} as const;
+
+export const BACK_HOME_LINK = { href: ROUTES.home, label: "Back to home" } as const;
+
+export const ERROR_PAGE = {
+  title: "Something went wrong",
+  description: "Please try again. If it keeps happening, come back later.",
+  retryLabel: "Try again",
+} as const;
