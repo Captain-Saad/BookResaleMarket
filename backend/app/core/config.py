@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     log_json: bool = True
     database_url: SecretStr | None = None
     database_direct_url: SecretStr | None = None
+    redis_url: SecretStr | None = None
     readiness_timeout_seconds: float = 5.0
 
     @property
@@ -23,12 +24,15 @@ class Settings(BaseSettings):
         return self.env == "production"
 
     @model_validator(mode="after")
-    def _require_database_outside_tests(self) -> Self:
-        if self.env != "test" and (self.database_url is None or self.database_direct_url is None):
-            raise ValueError(
-                "BOOKLOOP_DATABASE_URL and BOOKLOOP_DATABASE_DIRECT_URL must be set "
-                f"when BOOKLOOP_ENV={self.env}"
-            )
+    def _require_services_outside_tests(self) -> Self:
+        required = {
+            "BOOKLOOP_DATABASE_URL": self.database_url,
+            "BOOKLOOP_DATABASE_DIRECT_URL": self.database_direct_url,
+            "BOOKLOOP_REDIS_URL": self.redis_url,
+        }
+        missing = [name for name, value in required.items() if value is None]
+        if self.env != "test" and missing:
+            raise ValueError(f"{', '.join(missing)} must be set when BOOKLOOP_ENV={self.env}")
         return self
 
 

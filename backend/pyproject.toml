@@ -5,6 +5,7 @@ description = "BookLoop backend (FastAPI)"
 requires-python = ">=3.12"
 dependencies = [
     "alembic==1.20.0",
+    "arq==0.28.0",
     "asyncpg==0.32.0",
     "fastapi==0.143.3",
     "pydantic-settings==2.16.0",
@@ -39,5 +40,8 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-q -m 'not db'"
-markers = ["db: needs the real database from backend/.env (run with: uv run pytest -m db)"]
+addopts = "-q -m 'not db and not redis'"
+markers = [
+    "db: needs the real database from backend/.env (run with: uv run pytest -m db)",
+    "redis: needs Redis from docker compose (run with: uv run pytest -m redis)",
+]

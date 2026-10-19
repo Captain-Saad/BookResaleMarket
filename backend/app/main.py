@@ -9,6 +9,7 @@ from app.core.config import Settings, get_settings
 from app.core.db import create_engine
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
+from app.core.redis import create_redis_pool
 from app.core.request_id import RequestIdMiddleware
 from app.modules.health.router import router as health_router
 
@@ -19,11 +20,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        url = settings.database_url
-        app.state.engine = create_engine(url.get_secret_value()) if url else None
+        db_url, redis_url = settings.database_url, settings.redis_url
+        app.state.engine = create_engine(db_url.get_secret_value()) if db_url else None
+        app.state.redis = (
+            await create_redis_pool(redis_url.get_secret_value()) if redis_url else None
+        )
         yield
         if app.state.engine is not None:
             await app.state.engine.dispose()
+        if app.state.redis is not None:
+            await app.state.redis.aclose(close_connection_pool=True)
 
     app = FastAPI(
         title=settings.app_name,

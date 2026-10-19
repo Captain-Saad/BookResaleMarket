@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from structlog.contextvars import merge_contextvars
 from structlog.testing import capture_logs
 
+from app import main
 from app.core.config import Settings
 from app.main import create_app
 
@@ -51,12 +52,14 @@ def test_access_log_includes_the_request_id(client: TestClient) -> None:
     assert access["path"] == "/healthz"
 
 
-def test_docs_are_hidden_in_production() -> None:
+def test_docs_are_hidden_in_production(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(main, "create_redis_pool", _fake_redis_pool)
     settings = Settings(
         _env_file=None,
         env="production",
         database_url="postgresql://user:secret@localhost:6543/db",
         database_direct_url="postgresql://user:secret@localhost:5432/db",
+        redis_url="redis://localhost:6399/0",
     )
     with TestClient(create_app(settings)) as production_client:
         assert production_client.get("/docs").status_code == 404
@@ -68,13 +71,14 @@ def test_settings_read_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("BOOKLOOP_LOG_LEVEL", "WARNING")
     monkeypatch.setenv("BOOKLOOP_DATABASE_URL", "postgresql://u:p@h:6543/db")
     monkeypatch.setenv("BOOKLOOP_DATABASE_DIRECT_URL", "postgresql://u:p@h:5432/db")
+    monkeypatch.setenv("BOOKLOOP_REDIS_URL", "redis://h:6379/0")
     settings = Settings(_env_file=None)
     assert settings.is_production
     assert settings.log_level == "WARNING"
 
 
-def test_settings_fail_fast_without_database_outside_tests() -> None:
-    with pytest.raises(ValidationError, match="BOOKLOOP_DATABASE_URL"):
+def test_settings_fail_fast_without_services_outside_tests() -> None:
+    with pytest.raises(ValidationError, match=r"BOOKLOOP_DATABASE_URL.*BOOKLOOP_REDIS_URL"):
         Settings(_env_file=None, env="development")
 
 
@@ -87,3 +91,12 @@ def test_database_urls_are_secret() -> None:
     assert "hunter2" not in repr(settings)
     assert settings.database_url is not None
     assert "hunter2" in settings.database_url.get_secret_value()
+
+
+class _FakeRedis:
+    async def aclose(self, close_connection_pool: bool = False) -> None:
+        return None
+
+
+async def _fake_redis_pool(_url: str) -> _FakeRedis:
+    return _FakeRedis()
