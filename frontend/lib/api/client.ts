@@ -1,3 +1,5 @@
+import type { paths } from "@bookloop/api-client/schema";
+import createClient, { type Middleware } from "openapi-fetch";
 import { API_BASE_URL } from "@/lib/constants";
 
 export type ApiResult = {
@@ -41,3 +43,17 @@ export const apiFetch = async (path: string, init: RequestInit = {}): Promise<Ap
   const body: unknown = isJson ? await response.json() : await response.text();
   return { status: response.status, ok: response.ok, requestId, body };
 };
+
+const requestIdMiddleware: Middleware = {
+  onResponse({ response }) {
+    const requestId = response.headers.get("X-Request-ID");
+    if (requestId) recordRequestId(requestId);
+    return undefined;
+  },
+};
+
+export const api = createClient<paths>({
+  baseUrl: API_BASE_URL,
+  fetch: (request) => globalThis.fetch(request),
+});
+api.use(requestIdMiddleware);

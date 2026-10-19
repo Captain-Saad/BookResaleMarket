@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
-import { apiFetch, getRecentRequestIds } from "@/lib/api/client";
+import { api, apiFetch, getRecentRequestIds } from "@/lib/api/client";
 import { API_BASE_URL } from "@/lib/constants";
 import { server } from "../utils/msw";
 
@@ -32,5 +32,18 @@ describe("apiFetch", () => {
   it("keeps only the ten most recent request IDs", async () => {
     for (let i = 0; i < 12; i++) await apiFetch("/healthz");
     expect(getRecentRequestIds()).toHaveLength(10);
+  });
+});
+
+describe("api (typed client generated from OpenAPI)", () => {
+  it("returns typed data and records the request ID", async () => {
+    const { data, response } = await api.GET("/healthz");
+    expect(data?.status).toBe("ok");
+    expect(getRecentRequestIds()[0]).toBe(response.headers.get("X-Request-ID"));
+  });
+
+  it("sends typed request bodies", async () => {
+    const { data } = await api.POST("/api/v1/dev/clock/advance", { body: { hours: 24 } });
+    expect(data?.advancedHours).toBe(24);
   });
 });

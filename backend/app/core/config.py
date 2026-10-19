@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     database_direct_url: SecretStr | None = None
     redis_url: SecretStr | None = None
     readiness_timeout_seconds: float = 5.0
+    cors_origins: list[str] = ["http://localhost:3000"]
 
     @property
     def is_production(self) -> bool:

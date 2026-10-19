@@ -25,3 +25,16 @@ class FrozenClock:
 
     def advance(self, delta: timedelta) -> None:
         self._now += delta
+
+
+class OffsetClock:
+    """System time plus an adjustable offset, so the dev console can advance time (CLAUDE.md §6)."""
+
+    def __init__(self) -> None:
+        self._offset = timedelta(0)
+
+    def now(self) -> datetime:
+        return datetime.now(UTC) + self._offset
+
+    def advance(self, delta: timedelta) -> None:
+        self._offset += delta
