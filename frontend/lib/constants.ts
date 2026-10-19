@@ -5,18 +5,22 @@ export const THEME_STORAGE_KEY = "bookloop-theme";
 
 export const OPEN_LIBRARY_COVER_URL = "https://covers.openlibrary.org/b/id";
 
+export const SECTION_IDS = { shelves: "shelves", howItWorks: "how-it-works" } as const;
+
 export const NAV_LINKS = [
-  { href: "#shelves", label: "Browse" },
-  { href: "#how-it-works", label: "How it works" },
+  { href: `#${SECTION_IDS.shelves}`, label: "Browse" },
+  { href: `#${SECTION_IDS.howItWorks}`, label: "How it works" },
 ] as const;
 
 export const HERO = {
   title: "Buy and sell used books",
   subtitle:
     "Every book's condition is verified, and your payment is held until you confirm it arrived.",
-  primaryCta: { href: "#shelves", label: "Browse books" },
-  secondaryCta: { href: "#how-it-works", label: "How it works" },
+  primaryCta: { href: `#${SECTION_IDS.shelves}`, label: "Browse books" },
+  secondaryCta: { href: `#${SECTION_IDS.howItWorks}`, label: "How it works" },
 } as const;
+
+export const FEATURED_SHELVES_TITLE = "Featured shelves";
 
 export const FEATURED_SHELVES = [
   {
@@ -42,6 +46,8 @@ export const FEATURED_SHELVES = [
     ],
   },
 ] as const;
+
+export const HOW_IT_WORKS_TITLE = "How it works";
 
 export const HOW_IT_WORKS_STEPS = [
   {
