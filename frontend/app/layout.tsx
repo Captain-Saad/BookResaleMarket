@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import AuroraStage from "@/components/stage/aurora-stage";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/constants";
+import { fontVariables } from "@/lib/fonts";
+import { THEME_SCRIPT } from "@/lib/theme";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
@@ -9,8 +12,14 @@ export const metadata: Metadata = {
 };
 
 const RootLayout = ({ children }: Readonly<{ children: ReactNode }>) => (
-  <html lang="en">
-    <body className="min-h-dvh antialiased">{children}</body>
+  <html lang="en" data-theme="dark" className={fontVariables} suppressHydrationWarning>
+    <head>
+      <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+    </head>
+    <body className="min-h-dvh antialiased">
+      <AuroraStage />
+      {children}
+    </body>
   </html>
 );
 

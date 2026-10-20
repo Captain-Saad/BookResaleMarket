@@ -44,6 +44,7 @@ frontend/
 │  ├─ api/                     # BFF route handlers only when needed
 │  └─ layout.tsx, error.tsx, not-found.tsx, loading.tsx
 ├─ components/ui/       # glass primitives
+├─ hooks/               # React hooks (use-theme …)
 ├─ components/domain/   # BookCard, OrderTimeline, FeeBreakdown, StatusPill …
 ├─ lib/ (api, auth, money, region, motion, a11y)
 ├─ styles/ (tokens.css, glass.css, globals.css)
