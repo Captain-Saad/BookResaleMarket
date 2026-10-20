@@ -2,17 +2,14 @@ import { THEME_STORAGE_KEY } from "@/lib/constants";
 
 export type Theme = "dark" | "light";
 
-const isTheme = (value: unknown): value is Theme =>
-  value === "dark" || value === "light";
+const isTheme = (value: unknown): value is Theme => value === "dark" || value === "light";
 
 export const getPreferredTheme = (): Theme => {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     if (isTheme(stored)) return stored;
   } catch {}
-  return window.matchMedia("(prefers-color-scheme: light)").matches
-    ? "light"
-    : "dark";
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 };
 
 export const applyTheme = (theme: Theme) => {
