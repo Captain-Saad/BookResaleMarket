@@ -1,26 +1,17 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useLayoutEffect } from "react";
-import { applyTheme, getPreferredTheme, saveTheme, type Theme } from "@/lib/theme";
+import useTheme from "@/hooks/use-theme";
+import type { ThemeToggleProps } from "@/lib/types";
 
-const ThemeToggle = () => {
-  useLayoutEffect(() => {
-    applyTheme(getPreferredTheme());
-  }, []);
-
-  const toggle = () => {
-    const current = document.documentElement.getAttribute("data-theme");
-    const next: Theme = current === "light" ? "dark" : "light";
-    applyTheme(next);
-    saveTheme(next);
-  };
+const ThemeToggle = ({ label }: ThemeToggleProps) => {
+  const { toggleTheme } = useTheme();
 
   return (
     <button
       type="button"
-      onClick={toggle}
-      aria-label="Toggle color theme"
+      onClick={toggleTheme}
+      aria-label={label}
       className="inline-flex size-11 items-center justify-center rounded-full text-ink-1 transition-colors hover:bg-glass-3"
     >
       <Sun aria-hidden="true" className="hidden size-5 dark:block" />

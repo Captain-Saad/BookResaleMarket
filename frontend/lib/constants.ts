@@ -3,6 +3,8 @@ export const SITE_DESCRIPTION = "Buy and sell used books.";
 
 export const THEME_STORAGE_KEY = "bookloop-theme";
 
+export const THEME_TOGGLE_LABEL = "Toggle color theme";
+
 export const OPEN_LIBRARY_COVER_URL = "https://covers.openlibrary.org/b/id";
 
 export const SECTION_IDS = { shelves: "shelves", howItWorks: "how-it-works" } as const;

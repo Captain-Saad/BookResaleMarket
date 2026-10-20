@@ -2,7 +2,7 @@ import Link from "next/link";
 import ThemeToggle from "@/components/theme/theme-toggle";
 import type { SiteHeaderProps } from "@/lib/types";
 
-const SiteHeader = ({ siteName, navLinks }: SiteHeaderProps) => (
+const SiteHeader = ({ siteName, navLinks, themeToggleLabel }: SiteHeaderProps) => (
   <header className="sticky top-0 z-20 px-4 pt-4">
     <div className="glass glass--2 mx-auto flex max-w-page items-center justify-between gap-4 py-2 ps-5 pe-2">
       <Link href="/" className="font-display text-h3 font-semibold text-ink-1">
@@ -23,7 +23,7 @@ const SiteHeader = ({ siteName, navLinks }: SiteHeaderProps) => (
             ))}
           </ul>
         </nav>
-        <ThemeToggle />
+        <ThemeToggle label={themeToggleLabel} />
       </div>
     </div>
   </header>
