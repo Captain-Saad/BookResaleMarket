@@ -18,3 +18,8 @@ __pycache__/
 # TypeScript / Next.js generated files
 *.tsbuildinfo
 next-env.d.ts
+
+# Test output
+playwright-report/
+test-results/
+coverage/
