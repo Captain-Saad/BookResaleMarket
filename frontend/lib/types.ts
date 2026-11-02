@@ -26,7 +26,7 @@ export type HeroProps = {
   secondaryCta: NavLink;
 };
 
-export type BookShelfProps = { shelf: Shelf };
+export type BookShelfProps = { shelf: Shelf; coverSizes: string };
 
 export type BookCoverProps = { coverId: number; title: string; author: string; sizes: string };
 

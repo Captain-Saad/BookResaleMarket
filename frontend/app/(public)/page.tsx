@@ -2,6 +2,7 @@ import BookShelf from "@/components/domain/book-shelf";
 import Hero from "@/components/domain/hero";
 import HowItWorks from "@/components/domain/how-it-works";
 import {
+  COVER_SIZES,
   FEATURED_SHELVES,
   FEATURED_SHELVES_TITLE,
   HERO,
@@ -30,7 +31,7 @@ const HomePage = () => (
         {FEATURED_SHELVES_TITLE}
       </h2>
       {FEATURED_SHELVES.map((shelf) => (
-        <BookShelf key={shelf.id} shelf={shelf} />
+        <BookShelf key={shelf.id} shelf={shelf} coverSizes={COVER_SIZES} />
       ))}
     </section>
     <HowItWorks id={SECTION_IDS.howItWorks} title={HOW_IT_WORKS_TITLE} steps={HOW_IT_WORKS_STEPS} />

@@ -1,9 +1,7 @@
 import BookCover from "@/components/domain/book-cover";
 import type { BookShelfProps } from "@/lib/types";
 
-const COVER_SIZES = "(min-width: 64rem) 144px, (min-width: 30rem) 128px, 112px";
-
-const BookShelf = ({ shelf }: BookShelfProps) => (
+const BookShelf = ({ shelf, coverSizes }: BookShelfProps) => (
   <section aria-labelledby={`shelf-${shelf.id}`} className="flex flex-col gap-4">
     <h3 id={`shelf-${shelf.id}`} className="font-display text-h3 text-ink-1">
       {shelf.title}
@@ -15,7 +13,7 @@ const BookShelf = ({ shelf }: BookShelfProps) => (
             coverId={book.coverId}
             title={book.title}
             author={book.author}
-            sizes={COVER_SIZES}
+            sizes={coverSizes}
           />
           <p className="mt-3 line-clamp-2 text-sm font-medium text-ink-1">{book.title}</p>
           <p className="text-xs text-ink-3">{book.author}</p>
