@@ -9,7 +9,14 @@ const eslintConfig = defineConfig([
   ...nextTypescript,
   { rules: jsxA11y.flatConfigs.strict.rules },
   prettier,
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    "playwright-report/**",
+    "test-results/**",
+  ]),
 ]);
 
 export default eslintConfig;
