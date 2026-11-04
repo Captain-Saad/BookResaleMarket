@@ -140,6 +140,8 @@ export const TOAST_TONE_BORDERS = {
 
 export const OVERLAY_LABELS = { close: "Close", dismiss: "Dismiss" } as const;
 
+export const LOADING_LABEL = "Loading…";
+
 export const BACK_HOME_LINK = { href: ROUTES.home, label: "Back to home" } as const;
 
 export const ERROR_PAGE = {

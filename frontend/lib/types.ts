@@ -106,6 +106,13 @@ export type TooltipProps = {
   side?: "top" | "right" | "bottom" | "left";
 };
 
+export type ErrorCardProps = {
+  title: string;
+  description: string;
+  retryLabel: string;
+  onRetry: () => void;
+};
+
 export type ErrorPageProps = {
   error: Error & { digest?: string };
   retry: () => void;
