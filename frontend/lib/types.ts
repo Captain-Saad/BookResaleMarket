@@ -13,6 +13,12 @@ export enum ToastTone {
   Danger = "danger",
 }
 
+export enum HealthStatus {
+  Checking = "checking",
+  Online = "online",
+  Offline = "offline",
+}
+
 export type ChildrenProps = Readonly<{ children: ReactNode }>;
 
 export type NavLink = { href: string; label: string };
@@ -103,4 +109,9 @@ export type TooltipProps = {
 export type ErrorPageProps = {
   error: Error & { digest?: string };
   retry: () => void;
+};
+
+export type HealthBadgeProps = {
+  labels: Readonly<Record<HealthStatus, string>>;
+  tones: Readonly<Record<HealthStatus, "neutral" | "success" | "danger">>;
 };

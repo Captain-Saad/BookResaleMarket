@@ -1,10 +1,13 @@
 import BookShelf from "@/components/domain/book-shelf";
+import HealthBadge from "@/components/domain/health-badge";
 import Hero from "@/components/domain/hero";
 import HowItWorks from "@/components/domain/how-it-works";
 import {
   COVER_SIZES,
   FEATURED_SHELVES,
   FEATURED_SHELVES_TITLE,
+  HEALTH_BADGE_LABELS,
+  HEALTH_BADGE_TONES,
   HERO,
   HOW_IT_WORKS_STEPS,
   HOW_IT_WORKS_TITLE,
@@ -19,6 +22,9 @@ const HomePage = () => (
       primaryCta={HERO.primaryCta}
       secondaryCta={HERO.secondaryCta}
     />
+    {process.env.NODE_ENV !== "production" && (
+      <HealthBadge labels={HEALTH_BADGE_LABELS} tones={HEALTH_BADGE_TONES} />
+    )}
     <section
       id={SECTION_IDS.shelves}
       aria-labelledby={`${SECTION_IDS.shelves}-title`}
