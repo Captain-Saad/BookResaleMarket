@@ -26,6 +26,7 @@ class RequestIdMiddleware:
         request_id = (
             incoming if incoming and _SAFE_REQUEST_ID.fullmatch(incoming) else str(uuid.uuid4())
         )
+        scope.setdefault("state", {})["request_id"] = request_id
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(request_id=request_id)
         started = time.perf_counter()
@@ -34,8 +35,10 @@ class RequestIdMiddleware:
         async def send_with_request_id(message: Message) -> None:
             nonlocal status_code
             if message["type"] == "http.response.start":
-                status_code = message["status"]
-                MutableHeaders(scope=message).append(REQUEST_ID_HEADER, request_id)
+                status_code = int(message["status"])
+                headers = MutableHeaders(scope=message)
+                if REQUEST_ID_HEADER not in headers:
+                    headers.append(REQUEST_ID_HEADER, request_id)
             await send(message)
 
         try:
