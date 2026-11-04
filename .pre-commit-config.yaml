@@ -1,0 +1,19 @@
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks-docker
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        entry: bash -c 'cd backend && uv run ruff check .'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+      - id: frontend-lint-format
+        name: eslint and prettier
+        entry: bash -c 'cd frontend && pnpm lint && pnpm format:check'
+        language: system
+        files: ^frontend/
+        pass_filenames: false

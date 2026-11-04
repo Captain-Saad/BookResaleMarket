@@ -39,6 +39,9 @@ Each app documents its variables in its own `.env.example`. Real `.env*` files a
 | `make check` | Lint, format, types and unit tests for both apps, plus `alembic check` (needs the database) |
 | `make test` | Unit tests for both apps |
 | `make e2e` | Playwright end-to-end and accessibility tests |
+| `make lighthouse` | Lighthouse scores for public pages against the budgets in `docs/frontend.md` |
+| `make audit` | Dependency vulnerability scans and bandit |
+| `make hooks` | Optional: installs pre-commit hooks for gitleaks, ruff, ESLint and Prettier |
 | `make migrate` | Applies database migrations |
 | `make openapi` | Regenerates `packages/api-client` from the API |
 

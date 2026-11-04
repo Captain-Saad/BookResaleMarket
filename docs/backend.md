@@ -84,7 +84,7 @@ Out of scope v1: non-book items, rental/subscription, in-app chat (order notific
 | ISBN | `IsbnLookupProvider` (Open Library / Google Books) + manual fallback; SSRF-safe |
 | Email/notify | `Notifier` protocol (email adapter + in-app notification table) |
 | Observability | structlog JSON logs, OpenTelemetry traces, Sentry, `/healthz` `/readyz` |
-| Testing | pytest, pytest-asyncio, httpx, testcontainers-postgres (real PG, no SQLite), hypothesis for money math, `respx` for HTTP mocks |
+| Testing | pytest, pytest-asyncio, httpx2, testcontainers-postgres (real PG, no SQLite), hypothesis for money math, `respx` for HTTP mocks |
 | Quality | ruff, mypy --strict, pre-commit, `pip-audit`/`uv pip audit`, `bandit`, gitleaks |
 | CI | GitHub Actions: lint → types → tests (PG + Redis services) → migration check → security scans |
 | Monorepo | `frontend/` (pnpm) and `backend/` (`uv`) in one repo |
@@ -123,7 +123,7 @@ Dependency direction: `router → service → repository → models`. Services n
 7. **Ledger (NFR-3):** append-only **double-entry** ledger. Every money movement = a `journal` with ≥2 `ledger_entries` summing to zero (deferred constraint trigger enforces it). Payout amount = `SUM` over the order's ledger entries — never "current balance".
 8. **Idempotency:** all mutating money endpoints and all webhooks require/record an idempotency key (`idempotency_keys` table, unique on key+scope).
 9. **Concurrency (NFR-4):** listing purchase uses `SELECT … FOR UPDATE` on the listing row **and** a DB-level guarantee: partial unique index on `orders(listing_id) WHERE status NOT IN ('cancelled','expired','refunded')`. Both must exist.
-10. **API contract:** REST JSON, `/api/v1`, OpenAPI is the contract; cursor pagination; RFC 7807 problem+json errors with stable `code` strings; `X-Request-ID` on every response.
+10. **API contract:** REST JSON, `/api/v1`, OpenAPI is the contract; cursor pagination; RFC 9457 problem+json errors with stable `code` strings; `X-Request-ID` on every response.
 11. **RLS = defense in depth:** enable RLS on every table in `public`, **deny by default**. Backend connects with a privileged role; the browser **never** queries tables directly (only Supabase Auth + signed Storage uploads). Authorization is enforced in the API (§5).
 12. **Fulfillment Strategy (§4.3)** is the only place the two models diverge.
 
