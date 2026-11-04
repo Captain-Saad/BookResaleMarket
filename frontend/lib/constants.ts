@@ -149,7 +149,7 @@ export const ERROR_PAGE = {
 } as const;
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-export const API_MOCKING = process.env.NEXT_PUBLIC_API_MOCKING !== "disabled";
+export const API_MOCKING = process.env.NEXT_PUBLIC_API_MOCKING === "enabled";
 export const COMMIT_SHA = process.env.NEXT_PUBLIC_COMMIT_SHA ?? "local";
 
 export const DEV_ROLES = [
