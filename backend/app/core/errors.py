@@ -9,6 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.status import HTTP_422_UNPROCESSABLE_CONTENT
 
 from app.core.request_id import REQUEST_ID_HEADER
 
@@ -103,7 +104,7 @@ async def _validation_error(request: Request, exc: Exception) -> JSONResponse:
         for error in exc.errors()
     ]
     return problem_response(
-        request, status=HTTPStatus.UNPROCESSABLE_CONTENT, code="validation_error", errors=errors
+        request, status=HTTP_422_UNPROCESSABLE_CONTENT, code="validation_error", errors=errors
     )
 
 
