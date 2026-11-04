@@ -59,7 +59,10 @@
   --color-info: var(--info);
   --color-scrim: var(--scrim);
   --color-on-brand: var(--on-brand);
+  --color-glass-1: var(--glass-1);
+  --color-glass-2: var(--glass-2);
   --color-glass-3: var(--glass-3);
+  --color-glass-border: var(--glass-border);
   --font-display: var(--font-fraunces);
   --font-sans: var(--font-geist);
   --font-mono: var(--font-geist-mono);

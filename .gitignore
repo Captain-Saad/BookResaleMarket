@@ -23,3 +23,5 @@ next-env.d.ts
 playwright-report/
 test-results/
 coverage/
+storybook-static/
+*.log
