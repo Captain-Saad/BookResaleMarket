@@ -16,6 +16,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "lighthouse": "lhci autorun",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
@@ -35,6 +36,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
+    "@lhci/cli": "0.16.0",
     "@playwright/test": "1.64.1",
     "@storybook/addon-a11y": "10.6.2",
     "@storybook/nextjs-vite": "10.6.2",

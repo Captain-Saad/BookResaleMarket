@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint, format, types and unit tests
+        run: pnpm check
+        working-directory: frontend
+      - name: Storybook build
+        run: pnpm build-storybook
+        working-directory: frontend
+      - run: pnpm exec playwright install --with-deps chromium
+        working-directory: frontend
+      - name: E2E and accessibility
+        run: pnpm test:e2e
+        working-directory: frontend
+      - name: Lighthouse budgets
+        run: |
+          export CHROME_PATH="$(node -e "console.log(require('@playwright/test').chromium.executablePath())")"
+          pnpm lighthouse
+        working-directory: frontend
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bookloop
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:8.10.2-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          working-directory: backend
+      - run: uv sync --frozen
+      - name: Lint
+        run: uv run ruff check .
+      - name: Types
+        run: uv run mypy app tests alembic scripts
+      - name: Tests
+        run: uv run pytest -W error
+      - name: Database and Redis tests
+        run: uv run pytest -W error -m "db or redis"
+        env:
+          BOOKLOOP_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bookloop
+          BOOKLOOP_DATABASE_DIRECT_URL: postgresql://postgres:postgres@localhost:5432/bookloop
+          BOOKLOOP_REDIS_URL: redis://localhost:6380/0
+      - name: Migration check
+        env:
+          BOOKLOOP_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bookloop
+          BOOKLOOP_DATABASE_DIRECT_URL: postgresql://postgres:postgres@localhost:5432/bookloop
+          BOOKLOOP_REDIS_URL: redis://localhost:6380/0
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+          uv run alembic downgrade base
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Secret scan
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 git /repo
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          working-directory: backend
+      - name: Dependency audit and bandit
+        run: make audit
+
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          working-directory: backend
+      - run: pnpm install --frozen-lockfile
+      - name: Regenerate the API client
+        run: pnpm api:generate
+        working-directory: frontend
+      - name: Fail if the committed client is out of date
+        run: git diff --exit-code packages/api-client

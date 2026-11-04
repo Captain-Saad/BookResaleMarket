@@ -13,6 +13,12 @@ export enum ToastTone {
   Danger = "danger",
 }
 
+export enum HealthStatus {
+  Checking = "checking",
+  Online = "online",
+  Offline = "offline",
+}
+
 export type ChildrenProps = Readonly<{ children: ReactNode }>;
 
 export type NavLink = { href: string; label: string };
@@ -100,7 +106,19 @@ export type TooltipProps = {
   side?: "top" | "right" | "bottom" | "left";
 };
 
+export type ErrorCardProps = {
+  title: string;
+  description: string;
+  retryLabel: string;
+  onRetry: () => void;
+};
+
 export type ErrorPageProps = {
   error: Error & { digest?: string };
   retry: () => void;
+};
+
+export type HealthBadgeProps = {
+  labels: Readonly<Record<HealthStatus, string>>;
+  tones: Readonly<Record<HealthStatus, "neutral" | "success" | "danger">>;
 };

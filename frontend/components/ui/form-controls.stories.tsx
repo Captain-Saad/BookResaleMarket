@@ -44,7 +44,7 @@ export const Invalid: Story = {
         aria-invalid
         aria-describedby="story-isbn-error"
       />
-      <p id="story-isbn-error" className="text-sm text-danger">
+      <p id="story-isbn-error" className="text-sm text-danger-ink">
         ISBN must have 10 or 13 digits.
       </p>
     </div>

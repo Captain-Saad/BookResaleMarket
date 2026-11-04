@@ -6,39 +6,43 @@ A marketplace for buying and selling used books. ("BookLoop" is a placeholder na
 
 ```
 .
-├── docs/
-│   ├── ROADMAP.md     # ordered list of PRs, slice by slice
-│   ├── backend.md     # backend domain, architecture, security, modules M0–M13
-│   └── frontend.md    # design system, responsive rules, modules F0–F13
-└── frontend/          # Next.js app (App Router, TypeScript, Tailwind)
-    └── app/           # routes: Next.js requires this folder name; each subfolder is a URL segment
+├── docs/                  # ROADMAP.md, backend.md, frontend.md
+├── frontend/              # Next.js app (App Router, TypeScript, Tailwind)
+├── backend/               # FastAPI app (uv, SQLAlchemy, Alembic, ARQ)
+├── packages/api-client/   # TypeScript types generated from the API's OpenAPI schema
+├── docker-compose.yml     # Redis for local development
+└── Makefile               # the commands below
 ```
-
-The FastAPI backend arrives later in slice S0 as `backend/` (see `docs/ROADMAP.md`).
 
 ## Requirements
 
-- Node.js ≥ 20.9
-- pnpm 10 (`corepack enable` picks the version pinned in `frontend/package.json`)
+- Node.js 24 (`.nvmrc`) and pnpm 10 (`corepack enable` picks the pinned version)
+- Python 3.12+ and [uv](https://docs.astral.sh/uv/)
+- Docker, for Redis
 
-## Run the web app
-
-```bash
-cd frontend
-pnpm install
-pnpm dev      # http://localhost:3000
-```
-
-Production build (also runs the TypeScript check):
+## Setup
 
 ```bash
-pnpm build && pnpm start
+make install
+cp backend/.env.example backend/.env           # then fill in the database URLs
+cp frontend/.env.example frontend/.env.local
+make migrate
 ```
 
-## Environment variables
+Each app documents its variables in its own `.env.example`. Real `.env*` files are gitignored and must never be committed.
 
-Each app documents its variables in its own committed `.env.example` (e.g. `frontend/.env.example`). Copy it to `.env.local` in the same folder and fill in real values. Real `.env*` files are gitignored and must never be committed.
+## Commands
 
-## Contributing
+| Command | What it does |
+|---|---|
+| `make dev` | Starts Redis, the API on http://localhost:8000 and the web app on http://localhost:3000 |
+| `make check` | Lint, format, types and unit tests for both apps, plus `alembic check` (needs the database) |
+| `make test` | Unit tests for both apps |
+| `make e2e` | Playwright end-to-end and accessibility tests |
+| `make lighthouse` | Lighthouse scores for public pages against the budgets in `docs/frontend.md` |
+| `make audit` | Dependency vulnerability scans and bandit |
+| `make hooks` | Optional: installs pre-commit hooks for gitleaks, ruff, ESLint and Prettier |
+| `make migrate` | Applies database migrations |
+| `make openapi` | Regenerates `packages/api-client` from the API |
 
-One branch per PR (`feat/s<n>-<nn>-<short-name>`), Conventional Commits, PRs into `main` using `.github/pull_request_template.md`. Never commit directly to `main`.
+CI runs these checks on every pull request, using its own Postgres and Redis (`.github/workflows/ci.yml`).

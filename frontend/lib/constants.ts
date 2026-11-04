@@ -1,6 +1,6 @@
 import { Package, Search, Tag, User } from "lucide-react";
 
-import { ToastTone } from "@/lib/types";
+import { HealthStatus, ToastTone } from "@/lib/types";
 
 export const SITE_NAME = "BookLoop";
 export const SITE_DESCRIPTION = "Buy and sell used books.";
@@ -140,6 +140,8 @@ export const TOAST_TONE_BORDERS = {
 
 export const OVERLAY_LABELS = { close: "Close", dismiss: "Dismiss" } as const;
 
+export const LOADING_LABEL = "Loading…";
+
 export const BACK_HOME_LINK = { href: ROUTES.home, label: "Back to home" } as const;
 
 export const ERROR_PAGE = {
@@ -160,3 +162,15 @@ export const DEV_ROLES = [
   { value: "dispatcher", label: "Dispatcher" },
   { value: "admin", label: "Admin" },
 ] as const;
+
+export const HEALTH_BADGE_LABELS = {
+  [HealthStatus.Checking]: "Checking API…",
+  [HealthStatus.Online]: "API online",
+  [HealthStatus.Offline]: "API offline",
+} as const;
+
+export const HEALTH_BADGE_TONES = {
+  [HealthStatus.Checking]: "neutral",
+  [HealthStatus.Online]: "success",
+  [HealthStatus.Offline]: "danger",
+} as const;
