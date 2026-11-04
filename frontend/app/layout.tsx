@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import DevTools from "@/components/dev/dev-tools";
 import AuroraStage from "@/components/stage/aurora-stage";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/constants";
 import { fontVariables } from "@/lib/fonts";
@@ -21,6 +22,7 @@ const RootLayout = ({ children }: ChildrenProps) => (
     <body className="min-h-dvh antialiased">
       <AuroraStage />
       {children}
+      {process.env.NODE_ENV !== "production" && <DevTools />}
     </body>
   </html>
 );

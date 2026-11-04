@@ -147,3 +147,16 @@ export const ERROR_PAGE = {
   description: "Please try again. If it keeps happening, come back later.",
   retryLabel: "Try again",
 } as const;
+
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+export const API_MOCKING = process.env.NEXT_PUBLIC_API_MOCKING !== "disabled";
+export const COMMIT_SHA = process.env.NEXT_PUBLIC_COMMIT_SHA ?? "local";
+
+export const DEV_ROLES = [
+  { value: "buyer", label: "Buyer" },
+  { value: "seller", label: "Seller" },
+  { value: "warehouse", label: "Warehouse staff" },
+  { value: "courier", label: "Courier" },
+  { value: "dispatcher", label: "Dispatcher" },
+  { value: "admin", label: "Admin" },
+] as const;

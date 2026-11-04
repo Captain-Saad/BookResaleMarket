@@ -1,0 +1,64 @@
+import uuid
+
+import pytest
+from fastapi.testclient import TestClient
+from structlog.contextvars import merge_contextvars
+from structlog.testing import capture_logs
+
+from app.core.config import Settings
+from app.main import create_app
+
+
+def test_healthz_returns_ok(client: TestClient) -> None:
+    response = client.get("/healthz")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+def test_every_response_gets_a_request_id(client: TestClient) -> None:
+    response = client.get("/healthz")
+    assert uuid.UUID(response.headers["X-Request-ID"])
+
+
+def test_unknown_routes_also_get_a_request_id(client: TestClient) -> None:
+    response = client.get("/does-not-exist")
+    assert response.status_code == 404
+    assert "X-Request-ID" in response.headers
+
+
+def test_a_safe_incoming_request_id_is_kept(client: TestClient) -> None:
+    response = client.get("/healthz", headers={"X-Request-ID": "trace-abc_123.4"})
+    assert response.headers["X-Request-ID"] == "trace-abc_123.4"
+
+
+@pytest.mark.parametrize(
+    "unsafe_id",
+    ["has spaces", "x" * 65, "semi;colon", "<script>"],
+)
+def test_an_unsafe_incoming_request_id_is_replaced(client: TestClient, unsafe_id: str) -> None:
+    response = client.get("/healthz", headers={"X-Request-ID": unsafe_id})
+    assert response.headers["X-Request-ID"] != unsafe_id
+    assert uuid.UUID(response.headers["X-Request-ID"])
+
+
+def test_access_log_includes_the_request_id(client: TestClient) -> None:
+    with capture_logs(processors=[merge_contextvars]) as logs:
+        response = client.get("/healthz")
+    access = next(log for log in logs if log["event"] == "request completed")
+    assert access["request_id"] == response.headers["X-Request-ID"]
+    assert access["status"] == 200
+    assert access["path"] == "/healthz"
+
+
+def test_docs_are_hidden_in_production() -> None:
+    with TestClient(create_app(Settings(env="production"))) as production_client:
+        assert production_client.get("/docs").status_code == 404
+        assert production_client.get("/healthz").status_code == 200
+
+
+def test_settings_read_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BOOKLOOP_ENV", "production")
+    monkeypatch.setenv("BOOKLOOP_LOG_LEVEL", "WARNING")
+    settings = Settings()
+    assert settings.is_production
+    assert settings.log_level == "WARNING"
