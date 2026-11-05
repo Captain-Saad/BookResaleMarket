@@ -215,6 +215,76 @@ export interface paths {
         patch: operations["update_me_api_v1_me_patch"];
         trace?: never;
     };
+    "/api/v1/me/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Addresses */
+        get: operations["list_addresses_api_v1_me_addresses_get"];
+        put?: never;
+        /** Create Address */
+        post: operations["create_address_api_v1_me_addresses_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/addresses/{address_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Address */
+        delete: operations["delete_address_api_v1_me_addresses__address_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Address */
+        patch: operations["update_address_api_v1_me_addresses__address_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/me/roles/seller": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Become Seller */
+        post: operations["become_seller_api_v1_me_roles_seller_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/seller-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Seller Verification */
+        post: operations["start_seller_verification_api_v1_me_seller_verification_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -271,8 +341,7 @@ export interface components {
             phone: string | null;
             /** Roles */
             roles: string[];
-            /** Sellerverification */
-            sellerVerification: string;
+            sellerVerification: components["schemas"]["SellerVerificationStatus"];
             status: components["schemas"]["UserStatus"];
         };
         /** AccountUpdateRequest */
@@ -284,6 +353,48 @@ export interface components {
              * @default
              */
             phone: string;
+        };
+        /** AddressRequest */
+        AddressRequest: {
+            /** City */
+            city: string;
+            /** Country */
+            country: string;
+            /** Line1 */
+            line1: string;
+            /**
+             * Line2
+             * @default
+             */
+            line2: string;
+            /** Postalcode */
+            postalCode: string;
+            /** Recipientname */
+            recipientName: string;
+            /** Region */
+            region: string;
+        };
+        /** AddressResponse */
+        AddressResponse: {
+            /** City */
+            city: string;
+            /** Country */
+            country: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Line1 */
+            line1: string;
+            /** Line2 */
+            line2: string | null;
+            /** Postalcode */
+            postalCode: string;
+            /** Recipientname */
+            recipientName: string;
+            /** Region */
+            region: string;
         };
         /** ClockAdvanceRequest */
         ClockAdvanceRequest: {
@@ -400,6 +511,11 @@ export interface components {
             /** Seeded */
             seeded: number;
         };
+        /**
+         * SellerVerificationStatus
+         * @enum {string}
+         */
+        SellerVerificationStatus: "not_started" | "pending" | "verified" | "rejected";
         /** SessionRequest */
         SessionRequest: {
             /**
@@ -815,6 +931,163 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_addresses_api_v1_me_addresses_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressResponse"][];
+                };
+            };
+        };
+    };
+    create_address_api_v1_me_addresses_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddressRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_address_api_v1_me_addresses__address_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                address_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_address_api_v1_me_addresses__address_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                address_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddressRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    become_seller_api_v1_me_roles_seller_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountResponse"];
+                };
+            };
+        };
+    };
+    start_seller_verification_api_v1_me_seller_verification_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountResponse"];
                 };
             };
         };

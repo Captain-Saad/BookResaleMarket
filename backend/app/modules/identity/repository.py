@@ -3,14 +3,17 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.identity.models import (
+    Address,
     AuthSession,
     EmailToken,
     Profile,
     Role,
+    SellerVerification,
     TokenPurpose,
     User,
     UserRole,
@@ -129,3 +132,41 @@ async def consume_email_token(
 
 async def get_user(db: AsyncSession, user_id: UUID) -> User:
     return await db.get_one(User, user_id)
+
+
+async def add_role(db: AsyncSession, user_id: UUID, role: Role) -> None:
+    await db.execute(insert(UserRole).values(user_id=user_id, role=role).on_conflict_do_nothing())
+
+
+async def list_addresses(db: AsyncSession, user_id: UUID) -> list[Address]:
+    rows = await db.scalars(select(Address).where(Address.user_id == user_id).order_by(Address.id))
+    return list(rows)
+
+
+async def get_owned_address(db: AsyncSession, user_id: UUID, address_id: UUID) -> Address | None:
+    return await db.scalar(
+        select(Address).where(Address.id == address_id, Address.user_id == user_id)
+    )
+
+
+async def add_address(db: AsyncSession, address: Address) -> None:
+    db.add(address)
+    await db.flush()
+
+
+async def delete_owned_address(db: AsyncSession, user_id: UUID, address_id: UUID) -> bool:
+    deleted = await db.scalar(
+        delete(Address)
+        .where(Address.id == address_id, Address.user_id == user_id)
+        .returning(Address.id)
+    )
+    return deleted is not None
+
+
+async def get_seller_verification(db: AsyncSession, user_id: UUID) -> SellerVerification | None:
+    return await db.get(SellerVerification, user_id)
+
+
+async def add_seller_verification(db: AsyncSession, verification: SellerVerification) -> None:
+    db.add(verification)
+    await db.flush()

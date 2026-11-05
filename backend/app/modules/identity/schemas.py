@@ -1,12 +1,14 @@
 """Request and response bodies for auth and the current user."""
 
 from typing import Annotated
+from uuid import UUID
 
-from pydantic import AfterValidator, EmailStr, Field
+from pydantic import AfterValidator, ConfigDict, EmailStr, Field
+from pydantic.alias_generators import to_camel
 
 from app.core.schemas import ApiModel
 from app.core.security import PASSWORD_MAX_BYTES, PASSWORD_MIN_LENGTH
-from app.modules.identity.models import UserStatus
+from app.modules.identity.models import SellerVerificationStatus, UserStatus
 
 
 def _normalize_email(value: str) -> str:
@@ -60,9 +62,36 @@ class AccountResponse(ApiModel):
     phone: str | None
     status: UserStatus
     roles: list[str]
-    seller_verification: str
+    seller_verification: SellerVerificationStatus
 
 
 class AccountUpdateRequest(ApiModel):
     display_name: DisplayName
     phone: Annotated[str, AfterValidator(_strip), Field(max_length=32)] = ""
+
+
+def _strip_upper(value: str) -> str:
+    return value.strip().upper()
+
+
+class AddressRequest(ApiModel):
+    recipient_name: Annotated[str, AfterValidator(_strip), Field(min_length=1, max_length=100)]
+    line1: Annotated[str, AfterValidator(_strip), Field(min_length=1, max_length=200)]
+    line2: Annotated[str, AfterValidator(_strip), Field(max_length=200)] = ""
+    city: Annotated[str, AfterValidator(_strip), Field(min_length=1, max_length=100)]
+    region: Annotated[str, AfterValidator(_strip), Field(min_length=1, max_length=100)]
+    postal_code: Annotated[str, AfterValidator(_strip), Field(min_length=1, max_length=20)]
+    country: Annotated[str, AfterValidator(_strip_upper), Field(pattern=r"^[A-Z]{2}$")]
+
+
+class AddressResponse(ApiModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, from_attributes=True)
+
+    id: UUID
+    recipient_name: str
+    line1: str
+    line2: str | None
+    city: str
+    region: str
+    postal_code: str
+    country: str

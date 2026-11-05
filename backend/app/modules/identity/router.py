@@ -2,17 +2,20 @@
 
 from datetime import timedelta
 from http import HTTPStatus
+from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response
 
 from app.core.config import SESSION_COOKIE, Settings
-from app.core.deps import ClockDep, DbDep, NotifierDep, SettingsDep
+from app.core.deps import ClockDep, DbDep, NotifierDep, SellerVerificationDep, SettingsDep
 from app.core.rate_limit import enforce, rate_limit_by_ip
 from app.modules.identity import service
 from app.modules.identity.deps import CurrentAuth
 from app.modules.identity.schemas import (
     AccountResponse,
     AccountUpdateRequest,
+    AddressRequest,
+    AddressResponse,
     EmailRequest,
     LoginRequest,
     RegisterRequest,
@@ -152,3 +155,39 @@ async def get_me(auth: CurrentAuth, db: DbDep) -> AccountResponse:
 @me_router.patch("")
 async def update_me(body: AccountUpdateRequest, auth: CurrentAuth, db: DbDep) -> AccountResponse:
     return await service.update_account(db, auth.user, body)
+
+
+@me_router.get("/addresses")
+async def list_addresses(auth: CurrentAuth, db: DbDep) -> list[AddressResponse]:
+    addresses = await service.list_addresses(db, auth.user)
+    return [AddressResponse.model_validate(address) for address in addresses]
+
+
+@me_router.post("/addresses", status_code=HTTPStatus.CREATED)
+async def create_address(body: AddressRequest, auth: CurrentAuth, db: DbDep) -> AddressResponse:
+    return AddressResponse.model_validate(await service.create_address(db, auth.user, body))
+
+
+@me_router.patch("/addresses/{address_id}")
+async def update_address(
+    address_id: UUID, body: AddressRequest, auth: CurrentAuth, db: DbDep
+) -> AddressResponse:
+    address = await service.update_address(db, auth.user, address_id, body)
+    return AddressResponse.model_validate(address)
+
+
+@me_router.delete("/addresses/{address_id}", status_code=HTTPStatus.NO_CONTENT)
+async def delete_address(address_id: UUID, auth: CurrentAuth, db: DbDep) -> None:
+    await service.delete_address(db, auth.user, address_id)
+
+
+@me_router.post("/roles/seller")
+async def become_seller(auth: CurrentAuth, db: DbDep) -> AccountResponse:
+    return await service.become_seller(db, auth.user)
+
+
+@me_router.post("/seller-verification")
+async def start_seller_verification(
+    auth: CurrentAuth, db: DbDep, provider: SellerVerificationDep
+) -> AccountResponse:
+    return await service.start_seller_verification(db, provider, auth.user)

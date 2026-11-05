@@ -16,6 +16,7 @@ from app.core.rate_limit import RedisRateLimiter
 from app.core.redis import create_redis_pool
 from app.core.request_id import REQUEST_ID_HEADER, RequestIdMiddleware
 from app.integrations.email.smtp import SmtpNotifier
+from app.integrations.seller_verification.fake import FakeSellerVerificationProvider
 from app.modules.dev.router import router as dev_router
 from app.modules.health.router import router as health_router
 from app.modules.identity.router import auth_router, me_router
@@ -47,6 +48,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+    app.state.seller_verification = FakeSellerVerificationProvider()
     app.state.notifier = SmtpNotifier(settings.smtp_host, settings.smtp_port, settings.email_from)
     app.state.clock = SystemClock() if settings.is_production else OffsetClock()
     app.add_middleware(OriginCheckMiddleware, allowed_origins=settings.cors_origins)

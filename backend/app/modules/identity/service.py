@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import Clock
 from app.core.config import Settings
-from app.core.errors import InvalidTokenError, UnauthorizedError
+from app.core.errors import ForbiddenError, InvalidTokenError, NotFoundError, UnauthorizedError
 from app.core.security import (
     dummy_password_hash,
     hash_password,
@@ -19,9 +19,18 @@ from app.core.security import (
     verify_password,
 )
 from app.integrations.email.base import EmailMessage
+from app.integrations.seller_verification.base import SellerVerificationProvider
 from app.modules.identity import repository
-from app.modules.identity.models import AuthSession, TokenPurpose, User
-from app.modules.identity.schemas import AccountResponse, AccountUpdateRequest
+from app.modules.identity.models import (
+    Address,
+    AuthSession,
+    Role,
+    SellerVerification,
+    SellerVerificationStatus,
+    TokenPurpose,
+    User,
+)
+from app.modules.identity.schemas import AccountResponse, AccountUpdateRequest, AddressRequest
 
 LAST_SEEN_RESOLUTION = timedelta(minutes=1)
 
@@ -215,6 +224,7 @@ async def authenticate(
 
 async def account(db: AsyncSession, user: User) -> AccountResponse:
     profile = await repository.get_profile(db, user.id)
+    verification = await repository.get_seller_verification(db, user.id)
     return AccountResponse(
         email=user.email,
         email_verified=user.email_verified_at is not None,
@@ -222,7 +232,9 @@ async def account(db: AsyncSession, user: User) -> AccountResponse:
         phone=profile.phone,
         status=user.status,
         roles=await repository.get_roles(db, user.id),
-        seller_verification="not_started",
+        seller_verification=(
+            verification.status if verification else SellerVerificationStatus.NOT_STARTED
+        ),
     )
 
 
@@ -234,3 +246,69 @@ async def update_account(
     profile.phone = changes.phone or None
     await db.commit()
     return await account(db, user)
+
+
+async def list_addresses(db: AsyncSession, user: User) -> list[Address]:
+    return await repository.list_addresses(db, user.id)
+
+
+async def create_address(db: AsyncSession, user: User, body: AddressRequest) -> Address:
+    address = Address(
+        user_id=user.id, **body.model_dump(exclude={"line2"}), line2=body.line2 or None
+    )
+    await repository.add_address(db, address)
+    await db.commit()
+    return address
+
+
+async def update_address(
+    db: AsyncSession, user: User, address_id: UUID, body: AddressRequest
+) -> Address:
+    address = await repository.get_owned_address(db, user.id, address_id)
+    if address is None:
+        raise NotFoundError()
+    for field, value in body.model_dump().items():
+        setattr(address, field, value or None if field == "line2" else value)
+    await db.commit()
+    return address
+
+
+async def delete_address(db: AsyncSession, user: User, address_id: UUID) -> None:
+    if not await repository.delete_owned_address(db, user.id, address_id):
+        raise NotFoundError()
+    await db.commit()
+
+
+async def become_seller(db: AsyncSession, user: User) -> AccountResponse:
+    await repository.add_role(db, user.id, Role.SELLER)
+    await db.commit()
+    return await account(db, user)
+
+
+async def start_seller_verification(
+    db: AsyncSession, provider: SellerVerificationProvider, user: User
+) -> AccountResponse:
+    if Role.SELLER not in await repository.get_roles(db, user.id):
+        raise ForbiddenError()
+    verification = await repository.get_seller_verification(db, user.id)
+    if verification is None:
+        reference = await provider.start(user.id)
+        await repository.add_seller_verification(
+            db,
+            SellerVerification(
+                user_id=user.id,
+                status=SellerVerificationStatus.PENDING,
+                provider_reference=reference,
+            ),
+        )
+    elif verification.status == SellerVerificationStatus.REJECTED:
+        verification.provider_reference = await provider.start(user.id)
+        verification.status = SellerVerificationStatus.PENDING
+    await db.commit()
+    return await account(db, user)
+
+
+def require_verified_seller(status: SellerVerificationStatus) -> None:
+    """FR-34: S2's listing module calls this before a listing can become purchasable."""
+    if status != SellerVerificationStatus.VERIFIED:
+        raise ForbiddenError(code="seller_not_verified")

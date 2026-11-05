@@ -34,8 +34,7 @@
             "type": "array"
           },
           "sellerVerification": {
-            "title": "Sellerverification",
-            "type": "string"
+            "$ref": "#/components/schemas/SellerVerificationStatus"
           },
           "status": {
             "$ref": "#/components/schemas/UserStatus"
@@ -72,6 +71,116 @@
           "displayName"
         ],
         "title": "AccountUpdateRequest",
+        "type": "object"
+      },
+      "AddressRequest": {
+        "properties": {
+          "city": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "City",
+            "type": "string"
+          },
+          "country": {
+            "title": "Country",
+            "type": "string"
+          },
+          "line1": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Line1",
+            "type": "string"
+          },
+          "line2": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Line2",
+            "type": "string"
+          },
+          "postalCode": {
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Postalcode",
+            "type": "string"
+          },
+          "recipientName": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Recipientname",
+            "type": "string"
+          },
+          "region": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Region",
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipientName",
+          "line1",
+          "city",
+          "region",
+          "postalCode",
+          "country"
+        ],
+        "title": "AddressRequest",
+        "type": "object"
+      },
+      "AddressResponse": {
+        "properties": {
+          "city": {
+            "title": "City",
+            "type": "string"
+          },
+          "country": {
+            "title": "Country",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "line1": {
+            "title": "Line1",
+            "type": "string"
+          },
+          "line2": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line2"
+          },
+          "postalCode": {
+            "title": "Postalcode",
+            "type": "string"
+          },
+          "recipientName": {
+            "title": "Recipientname",
+            "type": "string"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "recipientName",
+          "line1",
+          "line2",
+          "city",
+          "region",
+          "postalCode",
+          "country"
+        ],
+        "title": "AddressResponse",
         "type": "object"
       },
       "ClockAdvanceRequest": {
@@ -334,6 +443,16 @@
         ],
         "title": "SeedResponse",
         "type": "object"
+      },
+      "SellerVerificationStatus": {
+        "enum": [
+          "not_started",
+          "pending",
+          "verified",
+          "rejected"
+        ],
+        "title": "SellerVerificationStatus",
+        "type": "string"
       },
       "SessionRequest": {
         "properties": {
@@ -869,6 +988,199 @@
           }
         },
         "summary": "Update Me",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/addresses": {
+      "get": {
+        "operationId": "list_addresses_api_v1_me_addresses_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AddressResponse"
+                  },
+                  "title": "Response List Addresses Api V1 Me Addresses Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Addresses",
+        "tags": [
+          "me"
+        ]
+      },
+      "post": {
+        "operationId": "create_address_api_v1_me_addresses_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Address",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/addresses/{address_id}": {
+      "delete": {
+        "operationId": "delete_address_api_v1_me_addresses__address_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "address_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Address Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Address",
+        "tags": [
+          "me"
+        ]
+      },
+      "patch": {
+        "operationId": "update_address_api_v1_me_addresses__address_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "address_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Address Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Address",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/roles/seller": {
+      "post": {
+        "operationId": "become_seller_api_v1_me_roles_seller_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Become Seller",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/seller-verification": {
+      "post": {
+        "operationId": "start_seller_verification_api_v1_me_seller_verification_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Start Seller Verification",
         "tags": [
           "me"
         ]

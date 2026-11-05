@@ -54,6 +54,11 @@ class UnauthorizedError(AppError):
     code = "not_authenticated"
 
 
+class ForbiddenError(AppError):
+    status = HTTPStatus.FORBIDDEN
+    code = "forbidden"
+
+
 class InvalidTokenError(AppError):
     status = HTTPStatus.BAD_REQUEST
     code = "invalid_token"

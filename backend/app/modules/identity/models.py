@@ -34,6 +34,13 @@ class TokenPurpose(StrEnum):
     RESET_PASSWORD = "reset_password"  # noqa: S105
 
 
+class SellerVerificationStatus(StrEnum):
+    NOT_STARTED = "not_started"
+    PENDING = "pending"
+    VERIFIED = "verified"
+    REJECTED = "rejected"
+
+
 class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "users"
     __table_args__ = (CheckConstraint(f"status IN ({_values_sql(UserStatus)})", name="status"),)
@@ -89,3 +96,30 @@ class EmailToken(UUIDPrimaryKeyMixin, Base):
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Address(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "addresses"
+    __table_args__ = (Index("ix_addresses_user_id", "user_id"),)
+
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    recipient_name: Mapped[str] = mapped_column(String(100))
+    line1: Mapped[str] = mapped_column(String(200))
+    line2: Mapped[str | None] = mapped_column(String(200))
+    city: Mapped[str] = mapped_column(String(100))
+    region: Mapped[str] = mapped_column(String(100))
+    postal_code: Mapped[str] = mapped_column(String(20))
+    country: Mapped[str] = mapped_column(String(2))
+
+
+class SellerVerification(TimestampMixin, Base):
+    __tablename__ = "seller_verifications"
+    __table_args__ = (
+        CheckConstraint(f"status IN ({_values_sql(SellerVerificationStatus)})", name="status"),
+    )
+
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    status: Mapped[str] = mapped_column(String(20))
+    provider_reference: Mapped[str | None] = mapped_column(String(200))

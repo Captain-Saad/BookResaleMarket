@@ -105,3 +105,45 @@ def scalar(database_url: str) -> Callable[[str], object]:
         return asyncio.run(run())
 
     return run_query
+
+
+@pytest.fixture
+def execute_sql(database_url: str) -> Callable[[str], None]:
+    def run_statement(sql: str) -> None:
+        async def run() -> None:
+            engine = create_async_engine(to_async_url(database_url), poolclass=NullPool)
+            async with engine.begin() as connection:
+                await connection.execute(text(sql))
+            await engine.dispose()
+
+        asyncio.run(run())
+
+    return run_statement
+
+
+@pytest.fixture
+def sign_in(api: TestClient) -> Callable[[str], None]:
+    """Signs in as this email, registering it first if it's new."""
+
+    def run(email: str) -> None:
+        api.cookies.clear()
+        password = "a-good-password"
+        api.post(
+            "/api/v1/auth/register",
+            json={"displayName": "Ada", "email": email, "password": password},
+        )
+        response = api.post("/api/v1/auth/login", json={"email": email, "password": password})
+        assert response.status_code == 200
+
+    return run
+
+
+@pytest.fixture
+def set_verification(execute_sql: Callable[[str], None]) -> Callable[[str, str], None]:
+    def run(email: str, status: str) -> None:
+        execute_sql(
+            f"UPDATE seller_verifications SET status = '{status}' "
+            f"WHERE user_id = (SELECT id FROM users WHERE email = '{email}')"
+        )
+
+    return run
