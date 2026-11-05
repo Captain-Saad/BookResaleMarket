@@ -34,11 +34,12 @@ Approximately **82 PRs** in total (down from 140). S0-00 and S0-01 are already d
 ## S1 — Auth, roles, profiles (F1 + M1)
 - **S1-01** FE Auth screens: login, register, reset, verify, shared form pattern (react-hook-form + zod), mock.
 - **S1-02** FE Account shell: profile, addresses, become-a-seller, verification, suspended-account screens, mock.
-- **S1-03** BE Identity foundation: users/profiles/roles tables + migration + RLS deny-by-default, Supabase JWT verification, `current_user` dependency, `GET/PATCH /me`, tests.
-- **S1-04** BE Addresses CRUD (owner-scoped, 404 for others) + become seller + `seller_verifications` behind an interface with a fake adapter.
-- **S1-05** BE Admin suspend/unsuspend + `audit_log` + per-request suspension check + route-auth enumeration test + JWT negative tests.
-- **S1-06** WIRE `@supabase/ssr` cookies, real login/register/logout, middleware route guards, role-aware nav.
-- **S1-07** WIRE `/me`, addresses, seller verification, suspended screen.
+- **S1-03** BE Identity foundation: users/sessions/profiles/roles tables + migration + RLS deny-by-default, bcrypt passwords, opaque session cookies, register/login/logout, `current_user` dependency, `GET/PATCH /me`, tests.
+- **S1-04** BE Email verification + password reset: `Notifier` email adapter, local test inbox in `docker-compose`, single-use tokens, rate limiting on auth routes, tests.
+- **S1-05** BE Addresses CRUD (owner-scoped, 404 for others) + become seller + `seller_verifications` behind an interface with a fake adapter.
+- **S1-06** BE Admin suspend/unsuspend + `audit_log` + per-request suspension check + route-auth enumeration test + session negative tests.
+- **S1-07** WIRE Real login/register/logout with the session cookie, route guards, role-aware nav.
+- **S1-08** WIRE `/me`, addresses, seller verification, suspended screen.
 
 **→ S1 GATE.**
 
