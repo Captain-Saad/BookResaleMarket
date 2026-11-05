@@ -3,9 +3,11 @@ request, so changes take effect immediately."""
 
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.models import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -123,3 +125,15 @@ class SellerVerification(TimestampMixin, Base):
     )
     status: Mapped[str] = mapped_column(String(20))
     provider_reference: Mapped[str | None] = mapped_column(String(200))
+
+
+class AuditLog(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "audit_log"
+    __table_args__ = (Index("ix_audit_log_target_id", "target_id"),)
+
+    actor_user_id: Mapped[UUID | None] = mapped_column()
+    action: Mapped[str] = mapped_column(String(50))
+    target_type: Mapped[str] = mapped_column(String(50))
+    target_id: Mapped[str] = mapped_column(String(100))
+    details: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

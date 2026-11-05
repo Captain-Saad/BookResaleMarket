@@ -10,7 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import Clock
 from app.core.config import Settings
-from app.core.errors import ForbiddenError, InvalidTokenError, NotFoundError, UnauthorizedError
+from app.core.errors import (
+    ConflictError,
+    ForbiddenError,
+    InvalidTokenError,
+    NotFoundError,
+    UnauthorizedError,
+)
 from app.core.security import (
     dummy_password_hash,
     hash_password,
@@ -29,10 +35,18 @@ from app.modules.identity.models import (
     SellerVerificationStatus,
     TokenPurpose,
     User,
+    UserStatus,
 )
-from app.modules.identity.schemas import AccountResponse, AccountUpdateRequest, AddressRequest
+from app.modules.identity.schemas import (
+    AccountResponse,
+    AccountUpdateRequest,
+    AddressRequest,
+    AdminUserPage,
+    AdminUserResponse,
+)
 
 LAST_SEEN_RESOLUTION = timedelta(minutes=1)
+ACCOUNT_SUSPENDED = "account_suspended"
 
 
 @dataclass(frozen=True)
@@ -185,6 +199,8 @@ async def login(
         if user is None:
             await _password_matches(None, password, settings)
         raise UnauthorizedError(code="invalid_credentials")
+    if user.status == UserStatus.SUSPENDED:
+        raise ForbiddenError(code=ACCOUNT_SUSPENDED)
     token = new_token()
     now = clock.now()
     await repository.add_session(
@@ -216,6 +232,8 @@ async def authenticate(
     idle_limit = session.last_seen_at + timedelta(minutes=settings.session_idle_minutes)
     if session.revoked_at is not None or now >= session.expires_at or now >= idle_limit:
         raise UnauthorizedError()
+    if user.status == UserStatus.SUSPENDED:
+        raise ForbiddenError(code=ACCOUNT_SUSPENDED)
     if now - session.last_seen_at >= LAST_SEEN_RESOLUTION:
         session.last_seen_at = now
         await db.commit()
@@ -279,10 +297,33 @@ async def delete_address(db: AsyncSession, user: User, address_id: UUID) -> None
     await db.commit()
 
 
-async def become_seller(db: AsyncSession, user: User) -> AccountResponse:
-    await repository.add_role(db, user.id, Role.SELLER)
+async def _grant(
+    db: AsyncSession, clock: Clock, *, actor_user_id: UUID | None, user_id: UUID, role: Role
+) -> None:
+    if await repository.add_role(db, user_id, role):
+        await repository.add_audit(
+            db,
+            actor_user_id=actor_user_id,
+            action="role.granted",
+            target_type="user",
+            target_id=str(user_id),
+            now=clock.now(),
+            details={"role": role},
+        )
     await db.commit()
+
+
+async def become_seller(db: AsyncSession, clock: Clock, user: User) -> AccountResponse:
+    await _grant(db, clock, actor_user_id=user.id, user_id=user.id, role=Role.SELLER)
     return await account(db, user)
+
+
+async def grant_role(db: AsyncSession, clock: Clock, *, email: str, role: Role) -> bool:
+    user = await repository.get_user_by_email(db, email)
+    if user is None:
+        return False
+    await _grant(db, clock, actor_user_id=None, user_id=user.id, role=role)
+    return True
 
 
 async def start_seller_verification(
@@ -312,3 +353,83 @@ def require_verified_seller(status: SellerVerificationStatus) -> None:
     """FR-34: S2's listing module calls this before a listing can become purchasable."""
     if status != SellerVerificationStatus.VERIFIED:
         raise ForbiddenError(code="seller_not_verified")
+
+
+async def _admin_user(db: AsyncSession, user: User) -> AdminUserResponse:
+    profile = await repository.get_profile(db, user.id)
+    return AdminUserResponse(
+        id=user.id,
+        email=user.email,
+        display_name=profile.display_name,
+        status=user.status,
+        roles=await repository.get_roles(db, user.id),
+    )
+
+
+async def list_users(db: AsyncSession, *, cursor: UUID | None, limit: int) -> AdminUserPage:
+    users = await repository.list_users(db, cursor=cursor, limit=limit + 1)
+    page = users[:limit]
+    return AdminUserPage(
+        items=[await _admin_user(db, user) for user in page],
+        next_cursor=page[-1].id if len(users) > limit else None,
+    )
+
+
+async def _set_status(
+    db: AsyncSession, clock: Clock, *, actor: User, user_id: UUID, status: UserStatus, action: str
+) -> AdminUserResponse:
+    user = await repository.get_user_or_none(db, user_id)
+    if user is None:
+        raise NotFoundError()
+    now = clock.now()
+    user.status = status
+    await repository.add_audit(
+        db,
+        actor_user_id=actor.id,
+        action=action,
+        target_type="user",
+        target_id=str(user_id),
+        now=now,
+    )
+    await db.commit()
+    return await _admin_user(db, user)
+
+
+async def suspend_user(
+    db: AsyncSession, clock: Clock, *, actor: User, user_id: UUID
+) -> AdminUserResponse:
+    if actor.id == user_id:
+        raise ConflictError(code="cannot_suspend_self")
+    return await _set_status(
+        db,
+        clock,
+        actor=actor,
+        user_id=user_id,
+        status=UserStatus.SUSPENDED,
+        action="user.suspended",
+    )
+
+
+async def unsuspend_user(
+    db: AsyncSession, clock: Clock, *, actor: User, user_id: UUID
+) -> AdminUserResponse:
+    return await _set_status(
+        db,
+        clock,
+        actor=actor,
+        user_id=user_id,
+        status=UserStatus.ACTIVE,
+        action="user.unsuspended",
+    )
+
+
+async def record_seller_verification(
+    db: AsyncSession, *, email: str, status: SellerVerificationStatus
+) -> None:
+    """Stands in for the provider's result until a real one sends it (dev console only)."""
+    user = await repository.get_user_by_email(db, email)
+    verification = user and await repository.get_seller_verification(db, user.id)
+    if not verification:
+        raise NotFoundError()
+    verification.status = status
+    await db.commit()

@@ -19,6 +19,7 @@ from app.integrations.email.smtp import SmtpNotifier
 from app.integrations.seller_verification.fake import FakeSellerVerificationProvider
 from app.modules.dev.router import router as dev_router
 from app.modules.health.router import router as health_router
+from app.modules.identity.admin_router import admin_router
 from app.modules.identity.router import auth_router, me_router
 
 
@@ -65,6 +66,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health_router)
     app.include_router(auth_router)
     app.include_router(me_router)
+    app.include_router(admin_router)
     if not settings.is_production:
         app.include_router(dev_router)
     return app

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.identity.models import (
     Address,
+    AuditLog,
     AuthSession,
     EmailToken,
     Profile,
@@ -134,8 +135,15 @@ async def get_user(db: AsyncSession, user_id: UUID) -> User:
     return await db.get_one(User, user_id)
 
 
-async def add_role(db: AsyncSession, user_id: UUID, role: Role) -> None:
-    await db.execute(insert(UserRole).values(user_id=user_id, role=role).on_conflict_do_nothing())
+async def add_role(db: AsyncSession, user_id: UUID, role: Role) -> bool:
+    """Returns True if the user didn't already have the role."""
+    added = await db.scalar(
+        insert(UserRole)
+        .values(user_id=user_id, role=role)
+        .on_conflict_do_nothing()
+        .returning(UserRole.role)
+    )
+    return added is not None
 
 
 async def list_addresses(db: AsyncSession, user_id: UUID) -> list[Address]:
@@ -170,3 +178,37 @@ async def get_seller_verification(db: AsyncSession, user_id: UUID) -> SellerVeri
 async def add_seller_verification(db: AsyncSession, verification: SellerVerification) -> None:
     db.add(verification)
     await db.flush()
+
+
+async def add_audit(
+    db: AsyncSession,
+    *,
+    actor_user_id: UUID | None,
+    action: str,
+    target_type: str,
+    target_id: str,
+    now: datetime,
+    details: dict[str, str] | None = None,
+) -> None:
+    db.add(
+        AuditLog(
+            actor_user_id=actor_user_id,
+            action=action,
+            target_type=target_type,
+            target_id=target_id,
+            details=details or {},
+            created_at=now,
+        )
+    )
+    await db.flush()
+
+
+async def list_users(db: AsyncSession, *, cursor: UUID | None, limit: int) -> list[User]:
+    query = select(User).order_by(User.id).limit(limit)
+    if cursor is not None:
+        query = query.where(User.id > cursor)
+    return list(await db.scalars(query))
+
+
+async def get_user_or_none(db: AsyncSession, user_id: UUID) -> User | None:
+    return await db.get(User, user_id)

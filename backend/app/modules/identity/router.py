@@ -7,7 +7,14 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response
 
 from app.core.config import SESSION_COOKIE, Settings
-from app.core.deps import ClockDep, DbDep, NotifierDep, SellerVerificationDep, SettingsDep
+from app.core.deps import (
+    ClockDep,
+    DbDep,
+    NotifierDep,
+    SellerVerificationDep,
+    SettingsDep,
+    public,
+)
 from app.core.rate_limit import enforce, rate_limit_by_ip
 from app.modules.identity import service
 from app.modules.identity.deps import CurrentAuth
@@ -23,7 +30,7 @@ from app.modules.identity.schemas import (
     TokenRequest,
 )
 
-auth_router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+auth_router = APIRouter(prefix="/api/v1/auth", tags=["auth"], dependencies=[Depends(public)])
 me_router = APIRouter(prefix="/api/v1/me", tags=["me"])
 
 LOGIN_LIMIT = 10
@@ -182,8 +189,8 @@ async def delete_address(address_id: UUID, auth: CurrentAuth, db: DbDep) -> None
 
 
 @me_router.post("/roles/seller")
-async def become_seller(auth: CurrentAuth, db: DbDep) -> AccountResponse:
-    return await service.become_seller(db, auth.user)
+async def become_seller(auth: CurrentAuth, db: DbDep, clock: ClockDep) -> AccountResponse:
+    return await service.become_seller(db, clock, auth.user)
 
 
 @me_router.post("/seller-verification")

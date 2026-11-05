@@ -13,6 +13,10 @@ from app.integrations.email.base import Notifier
 from app.integrations.seller_verification.base import SellerVerificationProvider
 
 
+def public() -> None:
+    """Marks a route as open to anyone. Every route must have this or an auth dependency."""
+
+
 def get_settings_dep(request: Request) -> Settings:
     return cast(Settings, request.app.state.settings)
 

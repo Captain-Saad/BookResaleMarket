@@ -95,3 +95,16 @@ class AddressResponse(ApiModel):
     region: str
     postal_code: str
     country: str
+
+
+class AdminUserResponse(ApiModel):
+    id: UUID
+    email: str
+    display_name: str
+    status: UserStatus
+    roles: list[str]
+
+
+class AdminUserPage(ApiModel):
+    items: list[AdminUserResponse]
+    next_cursor: UUID | None
