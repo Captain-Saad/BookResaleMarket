@@ -1,6 +1,6 @@
 import { Package, Search, Tag, User } from "lucide-react";
 
-import { HealthStatus, ToastTone } from "@/lib/types";
+import { AuthFormId, HealthStatus, ToastTone, VerifyEmailStatus } from "@/lib/types";
 
 export const SITE_NAME = "BookLoop";
 export const SITE_DESCRIPTION = "Buy and sell used books.";
@@ -18,25 +18,37 @@ export const AURORA_ORB_CLASSES =
 
 export const SECTION_IDS = { shelves: "shelves", howItWorks: "how-it-works" } as const;
 
-export const ROUTES = { home: "/", search: "/search" } as const;
+export const ROUTES = {
+  home: "/",
+  search: "/search",
+  login: "/login",
+  register: "/register",
+  forgotPassword: "/forgot-password",
+  verifyEmail: "/verify-email",
+  suspended: "/suspended",
+} as const;
 
 export const PRIMARY_NAV = [
   { id: "browse", href: ROUTES.search, label: "Browse" },
   { id: "sell", href: "/sell", label: "Sell" },
   { id: "orders", href: "/orders", label: "Orders" },
-  { id: "account", href: "/login", label: "Account" },
+  { id: "account", href: ROUTES.login, label: "Account" },
 ] as const;
 
 export const NAV_ICONS = { browse: Search, sell: Tag, orders: Package, account: User } as const;
 
 export const PLACEHOLDER_PAGES = {
   search: { title: "Search", description: "Search and filters arrive in slice S3." },
-  login: { title: "Sign in", description: "Sign-in and registration arrive in slice S1." },
   orders: { title: "Your orders", description: "Order history and tracking arrive in slice S8." },
   sell: { title: "Sell a book", description: "The listing wizard arrives in slice S2." },
   warehouse: { title: "Warehouse console", description: "The staff console arrives in slice S6." },
   courier: { title: "Courier app", description: "Pickup and delivery tasks arrive in slice S7." },
   admin: { title: "Admin console", description: "Operations and disputes arrive in slice S10." },
+  suspended: {
+    title: "Account suspended",
+    description:
+      "Your account has been suspended, so you can't buy or sell right now. Please contact support if you think this is a mistake.",
+  },
   notFound: { title: "Page not found", description: "This page doesn't exist or has moved." },
 } as const;
 
@@ -173,4 +185,114 @@ export const HEALTH_BADGE_TONES = {
   [HealthStatus.Checking]: "neutral",
   [HealthStatus.Online]: "success",
   [HealthStatus.Offline]: "danger",
+} as const;
+
+export const API_PATHS = {
+  login: "/api/v1/auth/login",
+  register: "/api/v1/auth/register",
+  forgotPassword: "/api/v1/auth/forgot-password",
+  resetPassword: "/api/v1/auth/reset-password",
+  verifyEmail: "/api/v1/auth/verify-email",
+  resendVerification: "/api/v1/auth/resend-verification",
+} as const;
+
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_BYTES = 72;
+
+export const VALIDATION = {
+  required: "This field is required.",
+  email: "Enter a valid email address.",
+  passwordTooShort: `Use at least ${PASSWORD_MIN_LENGTH} characters.`,
+  passwordTooLong: "That password is too long. Use a shorter one.",
+  country: "Use the two-letter country code, like PK or US.",
+} as const;
+
+export const AUTH_ERROR_MESSAGES = {
+  default: "Something went wrong. Please try again.",
+  invalid_credentials: "That email and password don't match.",
+  email_taken: "An account with this email already exists.",
+  invalid_token: "This link has expired or was already used. Please request a new one.",
+  rate_limited: "Too many attempts. Please wait a moment and try again.",
+  account_suspended: "This account has been suspended.",
+} as const;
+
+const EMAIL_FIELD = {
+  name: "email",
+  label: "Email",
+  type: "email",
+  autoComplete: "email",
+} as const;
+
+const NEW_PASSWORD_FIELD = {
+  name: "password",
+  label: "Password",
+  type: "password",
+  autoComplete: "new-password",
+  hint: `At least ${PASSWORD_MIN_LENGTH} characters.`,
+} as const;
+
+export const AUTH_FORMS = {
+  [AuthFormId.Login]: {
+    title: "Sign in",
+    description: "Welcome back to your bookshelf.",
+    submitLabel: "Sign in",
+    fields: [
+      EMAIL_FIELD,
+      { name: "password", label: "Password", type: "password", autoComplete: "current-password" },
+    ],
+    links: [
+      { href: ROUTES.forgotPassword, label: "Forgot your password?" },
+      { href: ROUTES.register, label: "Create an account" },
+    ],
+  },
+  [AuthFormId.Register]: {
+    title: "Create your account",
+    description: "One account lets you both buy and sell.",
+    submitLabel: "Create account",
+    fields: [
+      { name: "displayName", label: "Name", type: "text", autoComplete: "name" },
+      EMAIL_FIELD,
+      NEW_PASSWORD_FIELD,
+    ],
+    successMessage: "Almost there. Check your email for a link to verify your address.",
+    links: [{ href: ROUTES.login, label: "Already have an account? Sign in" }],
+  },
+  [AuthFormId.ForgotPassword]: {
+    title: "Reset your password",
+    description: "We'll email you a link to choose a new one.",
+    submitLabel: "Send reset link",
+    fields: [EMAIL_FIELD],
+    successMessage: "If that email has an account, a reset link is on its way.",
+    links: [{ href: ROUTES.login, label: "Back to sign in" }],
+  },
+  [AuthFormId.ResetPassword]: {
+    title: "Choose a new password",
+    description: "You'll be signed out on your other devices.",
+    submitLabel: "Save new password",
+    fields: [NEW_PASSWORD_FIELD],
+    successMessage: "Your password has been changed. You can sign in now.",
+    links: [{ href: ROUTES.login, label: "Back to sign in" }],
+  },
+  [AuthFormId.ResendVerification]: {
+    title: "Verify your email",
+    description: "Enter your email and we'll send a new verification link.",
+    submitLabel: "Send verification link",
+    fields: [EMAIL_FIELD],
+    successMessage: "If that email needs verifying, a new link is on its way.",
+    links: [{ href: ROUTES.login, label: "Back to sign in" }],
+  },
+} as const;
+
+export const VERIFY_EMAIL_COPY = {
+  title: "Verify your email",
+  [VerifyEmailStatus.Pending]: "Checking your link…",
+  [VerifyEmailStatus.Verified]: "Your email is verified. You're all set.",
+  [VerifyEmailStatus.Invalid]: "This link has expired or was already used.",
+  loginLink: { href: ROUTES.login, label: "Continue to sign in" },
+} as const;
+
+export const RESET_LINK_INVALID = {
+  title: "Reset link missing",
+  description: "This page needs the link from your email. You can request a new one.",
+  link: { href: ROUTES.forgotPassword, label: "Request a new link" },
 } as const;

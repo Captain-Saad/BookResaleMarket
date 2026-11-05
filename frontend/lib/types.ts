@@ -1,5 +1,6 @@
 import type { Dialog, Select as SelectPrimitive, Toast as ToastPrimitive } from "radix-ui";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
+import type { UseFormReturn } from "react-hook-form";
 import type { PRIMARY_NAV } from "@/lib/constants";
 
 export enum Theme {
@@ -17,6 +18,24 @@ export enum HealthStatus {
   Checking = "checking",
   Online = "online",
   Offline = "offline",
+}
+
+export enum AuthFormId {
+  Login = "login",
+  Register = "register",
+  ForgotPassword = "forgot-password",
+  ResetPassword = "reset-password",
+  ResendVerification = "resend-verification",
+}
+
+export enum VerifyEmailStatus {
+  Pending = "pending",
+  Verified = "verified",
+  Invalid = "invalid",
+}
+
+export enum ProblemCode {
+  AccountSuspended = "account_suspended",
 }
 
 export type ChildrenProps = Readonly<{ children: ReactNode }>;
@@ -122,3 +141,58 @@ export type HealthBadgeProps = {
   labels: Readonly<Record<HealthStatus, string>>;
   tones: Readonly<Record<HealthStatus, "neutral" | "success" | "danger">>;
 };
+
+export type AuthFormValues = Record<string, string>;
+
+export type FormFieldConfig = {
+  name: string;
+  label: string;
+  type: "email" | "password" | "text" | "tel";
+  autoComplete: string;
+  hint?: string;
+};
+
+export type FormFieldsProps = {
+  form: UseFormReturn<AuthFormValues>;
+  fields: readonly FormFieldConfig[];
+  idPrefix: string;
+};
+
+export type FormFieldProps = {
+  id: string;
+  label: string;
+  hint?: string;
+  error?: string;
+  children: ReactNode;
+};
+
+export type ProblemMessages = Readonly<Record<string, string>> & { default: string };
+
+export type AuthFormCopy = {
+  title: string;
+  description: string;
+  submitLabel: string;
+  fields: readonly FormFieldConfig[];
+  successMessage?: string;
+  links: readonly NavLink[];
+};
+
+export type AuthFormProps = {
+  formId: AuthFormId;
+  copy: AuthFormCopy;
+  errorMessages: ProblemMessages;
+  token?: string;
+  successHref?: string;
+  suspendedHref?: string;
+};
+
+export type UseAuthFormOptions = Omit<AuthFormProps, "copy">;
+
+export type TokenPageProps = { searchParams: Promise<{ token?: string | string[] }> };
+
+export type VerifyEmailCopy = Readonly<Record<VerifyEmailStatus, string>> & {
+  title: string;
+  loginLink: NavLink;
+};
+
+export type VerifyEmailStatusProps = { token: string; copy: VerifyEmailCopy };
