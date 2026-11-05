@@ -73,7 +73,7 @@ const AddressManager = ({ copy }: AddressManagerProps) => {
         title={copy.formTitle}
         closeLabel={copy.closeLabel}
       >
-        <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
+        <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
           <FormFields form={form} fields={copy.fields} idPrefix="address" />
           {saveFailed}
           <div className="flex justify-end gap-2">

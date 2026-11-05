@@ -1,3 +1,4 @@
+import type { components } from "@bookloop/api-client/schema";
 import type { Dialog, Select as SelectPrimitive, Toast as ToastPrimitive } from "radix-ui";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
@@ -40,11 +41,6 @@ export enum LoadStatus {
   Failed = "failed",
 }
 
-export enum UserStatus {
-  Active = "active",
-  Suspended = "suspended",
-}
-
 export enum SaveStatus {
   Idle = "idle",
   Saved = "saved",
@@ -70,6 +66,16 @@ export enum SellerVerificationStatus {
   Verified = "verified",
   Rejected = "rejected",
 }
+
+export type ApiOutcome<T> = { data?: T; error?: unknown; response: Response };
+
+export type Account = components["schemas"]["AccountResponse"];
+
+export type Address = components["schemas"]["AddressResponse"];
+
+export type AddressRequest = components["schemas"]["AddressRequest"];
+
+export type AccountUpdateRequest = components["schemas"]["AccountUpdateRequest"];
 
 export type ChildrenProps = Readonly<{ children: ReactNode }>;
 
@@ -290,7 +296,7 @@ export type SellerPanelCopy = AccountCopy & {
   becomeLabel: string;
   startLabel: string;
   statusLabel: string;
-  startableStatuses: readonly SellerVerificationStatus[];
+  startableStatuses: readonly string[];
   statuses: Readonly<Record<SellerVerificationStatus, { badge: string; description: string }>>;
 };
 

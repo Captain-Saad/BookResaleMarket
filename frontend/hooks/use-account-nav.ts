@@ -1,7 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api/client";
-import { accountSchema } from "@/lib/auth/schemas";
+import { api, apiFetch } from "@/lib/api/client";
 import { API_PATHS, ROUTES } from "@/lib/constants";
 
 const useAccountNav = () => {
@@ -10,9 +9,9 @@ const useAccountNav = () => {
 
   useEffect(() => {
     let active = true;
-    apiFetch(API_PATHS.me)
-      .then(({ body }) => {
-        const { data } = accountSchema.safeParse(body);
+    api
+      .GET(API_PATHS.me)
+      .then(({ data }) => {
         if (active && data) setRoles(data.roles);
       })
       .catch(() => undefined);

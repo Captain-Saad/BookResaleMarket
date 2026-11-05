@@ -16,7 +16,7 @@ const ProfileForm = ({ copy }: ProfileFormProps) => {
       {status !== LoadStatus.Ready || !account ? (
         <ResourceState status={status} copy={copy} onRetry={retry} />
       ) : (
-        <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
+        <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <p className="text-sm font-medium text-ink-1">{copy.emailLabel}</p>
             <p className="flex flex-wrap items-center gap-2 text-ink-2">

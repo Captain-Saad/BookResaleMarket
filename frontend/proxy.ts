@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { findGuard, loginPathFor } from "@/lib/auth/guards";
-import { accountSchema, problemSchema } from "@/lib/auth/schemas";
+import { problemSchema } from "@/lib/auth/schemas";
 import { API_BASE_URL, API_PATHS, GUARD_TIMEOUT_MS, ROUTES, SESSION_COOKIE } from "@/lib/constants";
-import { ProblemCode } from "@/lib/types";
+import { type Account, ProblemCode } from "@/lib/types";
 
 const redirectTo = (request: NextRequest, path: string) =>
   NextResponse.redirect(new URL(path, request.url));
@@ -28,8 +28,8 @@ export const proxy = async (request: NextRequest) => {
       }
     }
     if (guard.role && response.ok) {
-      const { data } = accountSchema.safeParse(await response.json());
-      if (!data?.roles.includes(guard.role)) return redirectTo(request, ROUTES.home);
+      const { roles }: Account = await response.json();
+      if (!roles.includes(guard.role)) return redirectTo(request, ROUTES.home);
     }
   } catch {
     return NextResponse.next();

@@ -232,6 +232,8 @@ export const API_PATHS = {
   sellerVerification: "/api/v1/me/seller-verification",
 } as const satisfies Record<string, keyof paths>;
 
+export const ADDRESS_ITEM_PATH = "/api/v1/me/addresses/{address_id}" satisfies keyof paths;
+
 export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_MAX_BYTES = 72;
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { API_PATHS, PASSWORD_MAX_BYTES, PASSWORD_MIN_LENGTH, VALIDATION } from "@/lib/constants";
-import { AuthFormId, type AuthFormValues, SellerVerificationStatus, UserStatus } from "@/lib/types";
+import { AuthFormId, type AuthFormValues } from "@/lib/types";
 
 const email = z.email(VALIDATION.email);
 
@@ -52,28 +52,3 @@ export const addressFormSchema: z.ZodType<AuthFormValues, AuthFormValues> = z.ob
     .trim()
     .regex(/^[A-Za-z]{2}$/, VALIDATION.country),
 });
-
-export const accountSchema = z.object({
-  email: z.string(),
-  emailVerified: z.boolean(),
-  displayName: z.string(),
-  phone: z.string().nullable(),
-  status: z.enum(UserStatus),
-  roles: z.array(z.string()),
-  sellerVerification: z.enum(SellerVerificationStatus),
-});
-
-export const addressSchema = z.object({
-  id: z.string(),
-  recipientName: z.string(),
-  line1: z.string(),
-  line2: z.string().nullable(),
-  city: z.string(),
-  region: z.string(),
-  postalCode: z.string(),
-  country: z.string(),
-});
-
-export const addressListSchema = z.array(addressSchema);
-
-export type Address = z.infer<typeof addressSchema>;
