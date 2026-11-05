@@ -27,7 +27,7 @@ const renderLogin = () =>
       formId={AuthFormId.Login}
       copy={AUTH_FORMS[AuthFormId.Login]}
       errorMessages={AUTH_ERROR_MESSAGES}
-      successHref={ROUTES.home}
+      successHref={ROUTES.account}
       suspendedHref={ROUTES.suspended}
     />,
   );
@@ -55,10 +55,10 @@ describe("AuthForm", () => {
     server.events.removeAllListeners();
   });
 
-  it("goes to the success page after signing in", async () => {
+  it("goes to the account page after signing in", async () => {
     renderLogin();
     await signIn("reader@example.com", "a-good-password");
-    await waitFor(() => expect(push).toHaveBeenCalledWith(ROUTES.home));
+    await waitFor(() => expect(push).toHaveBeenCalledWith(ROUTES.account));
   });
 
   it("shows the API's error for wrong credentials", async () => {

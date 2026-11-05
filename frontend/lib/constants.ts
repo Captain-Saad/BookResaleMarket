@@ -1,6 +1,12 @@
 import { Package, Search, Tag, User } from "lucide-react";
 
-import { AuthFormId, HealthStatus, ToastTone, VerifyEmailStatus } from "@/lib/types";
+import {
+  AuthFormId,
+  HealthStatus,
+  SellerVerificationStatus,
+  ToastTone,
+  VerifyEmailStatus,
+} from "@/lib/types";
 
 export const SITE_NAME = "BookLoop";
 export const SITE_DESCRIPTION = "Buy and sell used books.";
@@ -26,6 +32,9 @@ export const ROUTES = {
   forgotPassword: "/forgot-password",
   verifyEmail: "/verify-email",
   suspended: "/suspended",
+  account: "/account",
+  addresses: "/account/addresses",
+  seller: "/account/seller",
 } as const;
 
 export const PRIMARY_NAV = [
@@ -194,6 +203,10 @@ export const API_PATHS = {
   resetPassword: "/api/v1/auth/reset-password",
   verifyEmail: "/api/v1/auth/verify-email",
   resendVerification: "/api/v1/auth/resend-verification",
+  me: "/api/v1/me",
+  addresses: "/api/v1/me/addresses",
+  becomeSeller: "/api/v1/me/roles/seller",
+  sellerVerification: "/api/v1/me/seller-verification",
 } as const;
 
 export const PASSWORD_MIN_LENGTH = 8;
@@ -295,4 +308,101 @@ export const RESET_LINK_INVALID = {
   title: "Reset link missing",
   description: "This page needs the link from your email. You can request a new one.",
   link: { href: ROUTES.forgotPassword, label: "Request a new link" },
+} as const;
+
+export const ACCOUNT_NAV = {
+  label: "Account",
+  links: [
+    { href: ROUTES.account, label: "Profile" },
+    { href: ROUTES.addresses, label: "Addresses" },
+    { href: ROUTES.seller, label: "Selling" },
+  ],
+} as const;
+
+const ACCOUNT_COPY = {
+  loading: "Loading…",
+  loadFailed: "We couldn't load this. Please try again.",
+  retry: "Try again",
+  saved: "Saved.",
+  saveFailed: "We couldn't save that. Please try again.",
+} as const;
+
+export const PROFILE_FORM_COPY = {
+  ...ACCOUNT_COPY,
+  title: "Profile",
+  emailLabel: "Email",
+  emailUnverified: "Not verified yet",
+  fields: [
+    { name: "displayName", label: "Name", type: "text", autoComplete: "name" },
+    { name: "phone", label: "Phone (optional)", type: "tel", autoComplete: "tel" },
+  ],
+  submitLabel: "Save changes",
+} as const;
+
+export const EMPTY_ADDRESS = {
+  recipientName: "",
+  line1: "",
+  line2: "",
+  city: "",
+  region: "",
+  postalCode: "",
+  country: "",
+} as const;
+
+export const ADDRESS_MANAGER_COPY = {
+  ...ACCOUNT_COPY,
+  title: "Addresses",
+  empty: "You haven't added an address yet.",
+  addLabel: "Add address",
+  editLabel: "Edit",
+  deleteLabel: "Delete",
+  closeLabel: OVERLAY_LABELS.close,
+  formTitle: "Address",
+  submitLabel: "Save address",
+  cancelLabel: "Cancel",
+  deleteTitle: "Delete this address?",
+  deleteDescription: "This can't be undone. Existing orders keep their delivery details.",
+  fields: [
+    { name: "recipientName", label: "Recipient name", type: "text", autoComplete: "name" },
+    { name: "line1", label: "Address line 1", type: "text", autoComplete: "address-line1" },
+    {
+      name: "line2",
+      label: "Address line 2 (optional)",
+      type: "text",
+      autoComplete: "address-line2",
+    },
+    { name: "city", label: "City", type: "text", autoComplete: "address-level2" },
+    { name: "region", label: "State or region", type: "text", autoComplete: "address-level1" },
+    { name: "postalCode", label: "Postal code", type: "text", autoComplete: "postal-code" },
+    { name: "country", label: "Country code", type: "text", autoComplete: "country" },
+  ],
+} as const;
+
+export const SELLER_PANEL_COPY = {
+  ...ACCOUNT_COPY,
+  title: "Selling",
+  becomeDescription:
+    "Become a seller to list your books. You'll verify your identity before your listings can be bought.",
+  becomeLabel: "Become a seller",
+  startLabel: "Start verification",
+  statusLabel: "Verification",
+  startableStatuses: [SellerVerificationStatus.NotStarted, SellerVerificationStatus.Rejected],
+  statuses: {
+    [SellerVerificationStatus.NotStarted]: {
+      badge: "Not started",
+      description: "Verify your identity so buyers can purchase your listings.",
+    },
+    [SellerVerificationStatus.Pending]: {
+      badge: "In review",
+      description: "We're checking your details. This usually doesn't take long.",
+    },
+    [SellerVerificationStatus.Verified]: {
+      badge: "Verified",
+      description: "You're verified, so buyers can purchase your listings.",
+    },
+    [SellerVerificationStatus.Rejected]: {
+      badge: "Not approved",
+      description: "We couldn't verify your details. You can try again.",
+    },
+  },
 } as const;

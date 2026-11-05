@@ -14,6 +14,24 @@ const problem = (status: number, code: string) =>
 
 const url = (path: string) => `${API_BASE_URL}${path}`;
 
+const NEW_ACCOUNT = {
+  email: "reader@example.com",
+  emailVerified: true,
+  displayName: "Ada Reader",
+  phone: null as string | null,
+  status: "active",
+  roles: ["buyer"],
+  sellerVerification: "not_started",
+};
+
+let account = { ...NEW_ACCOUNT };
+let addresses: Array<Record<string, unknown>> = [];
+
+export const resetMockAccount = () => {
+  account = { ...NEW_ACCOUNT };
+  addresses = [];
+};
+
 const authHandlers = [
   http.post<never, { email: string; password: string }>(
     url(API_PATHS.login),
@@ -21,7 +39,7 @@ const authHandlers = [
       const { email, password } = await request.json();
       if (email === "suspended@example.com") return problem(403, "account_suspended");
       if (password === "wrong-password") return problem(401, "invalid_credentials");
-      return new HttpResponse(null, withRequestId({ status: 204 }));
+      return HttpResponse.json(account, withRequestId());
     },
   ),
   http.post<never, { email: string }>(url(API_PATHS.register), async ({ request }) => {
@@ -49,8 +67,50 @@ const authHandlers = [
   }),
 ];
 
+const accountHandlers = [
+  http.get(url(API_PATHS.me), () => HttpResponse.json(account, withRequestId())),
+  http.patch<never, { displayName: string; phone: string }>(
+    url(API_PATHS.me),
+    async ({ request }) => {
+      const { displayName, phone } = await request.json();
+      account = { ...account, displayName, phone: phone || null };
+      return HttpResponse.json(account, withRequestId());
+    },
+  ),
+  http.get(url(API_PATHS.addresses), () => HttpResponse.json(addresses, withRequestId())),
+  http.post<never, Record<string, string>>(url(API_PATHS.addresses), async ({ request }) => {
+    const created = { ...(await request.json()), id: crypto.randomUUID() };
+    addresses = [...addresses, created];
+    return HttpResponse.json(created, withRequestId({ status: 201 }));
+  }),
+  http.patch<{ id: string }, Record<string, string>>(
+    url(`${API_PATHS.addresses}/:id`),
+    async ({ params, request }) => {
+      const changes = await request.json();
+      addresses = addresses.map((item) => (item.id === params.id ? { ...item, ...changes } : item));
+      return HttpResponse.json(
+        addresses.find((item) => item.id === params.id),
+        withRequestId(),
+      );
+    },
+  ),
+  http.delete<{ id: string }>(url(`${API_PATHS.addresses}/:id`), ({ params }) => {
+    addresses = addresses.filter((item) => item.id !== params.id);
+    return new HttpResponse(null, withRequestId({ status: 204 }));
+  }),
+  http.post(url(API_PATHS.becomeSeller), () => {
+    account = { ...account, roles: [...account.roles, "seller"] };
+    return HttpResponse.json(account, withRequestId());
+  }),
+  http.post(url(API_PATHS.sellerVerification), () => {
+    account = { ...account, sellerVerification: "pending" };
+    return HttpResponse.json(account, withRequestId());
+  }),
+];
+
 export const handlers = [
   ...authHandlers,
+  ...accountHandlers,
 
   http.get(`${API_BASE_URL}/healthz`, () =>
     HttpResponse.json<Schemas["HealthResponse"]>({ status: "ok" }, withRequestId()),

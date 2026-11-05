@@ -12,7 +12,7 @@ const LoginPage = () => (
     formId={AuthFormId.Login}
     copy={copy}
     errorMessages={AUTH_ERROR_MESSAGES}
-    successHref={ROUTES.home}
+    successHref={ROUTES.account}
     suspendedHref={ROUTES.suspended}
   />
 );

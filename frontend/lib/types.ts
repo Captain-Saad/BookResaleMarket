@@ -34,8 +34,36 @@ export enum VerifyEmailStatus {
   Invalid = "invalid",
 }
 
+export enum LoadStatus {
+  Loading = "loading",
+  Ready = "ready",
+  Failed = "failed",
+}
+
+export enum UserStatus {
+  Active = "active",
+  Suspended = "suspended",
+}
+
+export enum SaveStatus {
+  Idle = "idle",
+  Saved = "saved",
+  Failed = "failed",
+}
+
+export enum UserRole {
+  Seller = "seller",
+}
+
 export enum ProblemCode {
   AccountSuspended = "account_suspended",
+}
+
+export enum SellerVerificationStatus {
+  NotStarted = "not_started",
+  Pending = "pending",
+  Verified = "verified",
+  Rejected = "rejected",
 }
 
 export type ChildrenProps = Readonly<{ children: ReactNode }>;
@@ -196,3 +224,58 @@ export type VerifyEmailCopy = Readonly<Record<VerifyEmailStatus, string>> & {
 };
 
 export type VerifyEmailStatusProps = { token: string; copy: VerifyEmailCopy };
+
+export type AccountNavProps = { label: string; links: readonly NavLink[] };
+
+export type AccountCopy = {
+  loading: string;
+  loadFailed: string;
+  retry: string;
+  saved: string;
+  saveFailed: string;
+};
+
+export type ResourceStateProps = {
+  status: LoadStatus;
+  copy: Pick<AccountCopy, "loading" | "loadFailed" | "retry">;
+  onRetry: () => void;
+};
+
+export type ProfileFormCopy = AccountCopy & {
+  title: string;
+  emailLabel: string;
+  emailUnverified: string;
+  fields: readonly FormFieldConfig[];
+  submitLabel: string;
+};
+
+export type ProfileFormProps = { copy: ProfileFormCopy };
+
+export type AddressManagerCopy = AccountCopy & {
+  title: string;
+  empty: string;
+  addLabel: string;
+  editLabel: string;
+  deleteLabel: string;
+  closeLabel: string;
+  formTitle: string;
+  submitLabel: string;
+  cancelLabel: string;
+  deleteTitle: string;
+  deleteDescription: string;
+  fields: readonly FormFieldConfig[];
+};
+
+export type AddressManagerProps = { copy: AddressManagerCopy };
+
+export type SellerPanelCopy = AccountCopy & {
+  title: string;
+  becomeDescription: string;
+  becomeLabel: string;
+  startLabel: string;
+  statusLabel: string;
+  startableStatuses: readonly SellerVerificationStatus[];
+  statuses: Readonly<Record<SellerVerificationStatus, { badge: string; description: string }>>;
+};
+
+export type SellerPanelProps = { copy: SellerPanelCopy };
