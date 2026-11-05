@@ -29,6 +29,11 @@ def _values_sql(values: type[StrEnum]) -> str:
     return ", ".join(f"'{value}'" for value in values)
 
 
+class TokenPurpose(StrEnum):
+    VERIFY_EMAIL = "verify_email"
+    RESET_PASSWORD = "reset_password"  # noqa: S105
+
+
 class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "users"
     __table_args__ = (CheckConstraint(f"status IN ({_values_sql(UserStatus)})", name="status"),)
@@ -70,3 +75,17 @@ class AuthSession(UUIDPrimaryKeyMixin, Base):
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class EmailToken(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "email_tokens"
+    __table_args__ = (
+        CheckConstraint(f"purpose IN ({_values_sql(TokenPurpose)})", name="purpose"),
+        Index("ix_email_tokens_user_id", "user_id"),
+    )
+
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    purpose: Mapped[str] = mapped_column(String(20))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

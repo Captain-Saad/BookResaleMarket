@@ -3,13 +3,14 @@
 import asyncio
 from dataclasses import dataclass
 from datetime import timedelta
+from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import Clock
 from app.core.config import Settings
-from app.core.errors import UnauthorizedError
+from app.core.errors import InvalidTokenError, UnauthorizedError
 from app.core.security import (
     dummy_password_hash,
     hash_password,
@@ -17,8 +18,9 @@ from app.core.security import (
     new_token,
     verify_password,
 )
+from app.integrations.email.base import EmailMessage
 from app.modules.identity import repository
-from app.modules.identity.models import AuthSession, User
+from app.modules.identity.models import AuthSession, TokenPurpose, User
 from app.modules.identity.schemas import AccountResponse, AccountUpdateRequest
 
 LAST_SEEN_RESOLUTION = timedelta(minutes=1)
@@ -30,19 +32,134 @@ class Authenticated:
     session: AuthSession
 
 
+async def _issue_token(
+    db: AsyncSession, clock: Clock, user_id: UUID, purpose: TokenPurpose, lifetime: timedelta
+) -> str:
+    token = new_token()
+    now = clock.now()
+    await repository.replace_email_token(
+        db,
+        user_id=user_id,
+        purpose=purpose,
+        token_hash=hash_token(token),
+        now=now,
+        expires_at=now + lifetime,
+    )
+    await db.commit()
+    return token
+
+
+def _verification_email(settings: Settings, email: str, token: str) -> EmailMessage:
+    link = f"{settings.frontend_base_url}/verify-email?token={token}"
+    return EmailMessage(
+        to=email,
+        subject="Verify your BookLoop email",
+        body=f"Welcome to BookLoop. Verify your email with this link:\n\n{link}\n",
+    )
+
+
 async def register(
-    db: AsyncSession, settings: Settings, *, email: str, password: str, display_name: str
-) -> None:
+    db: AsyncSession,
+    settings: Settings,
+    clock: Clock,
+    *,
+    email: str,
+    password: str,
+    display_name: str,
+) -> EmailMessage:
+    """Answers the same way for new and existing emails. The email itself tells them apart, and
+    only the owner of the address can read it."""
     password_hash = await asyncio.to_thread(hash_password, password, settings.bcrypt_rounds)
+    already_registered = EmailMessage(
+        to=email,
+        subject="You already have a BookLoop account",
+        body="Someone tried to register with this email, which already has an account.\n"
+        "If this was you, sign in or reset your password. If not, you can ignore this email.\n",
+    )
     if await repository.get_user_by_email(db, email) is not None:
-        return
+        return already_registered
     try:
-        await repository.add_user(
+        user = await repository.add_user(
             db, email=email, password_hash=password_hash, display_name=display_name
         )
         await db.commit()
     except IntegrityError:
         await db.rollback()
+        return already_registered
+    token = await _issue_token(
+        db,
+        clock,
+        user.id,
+        TokenPurpose.VERIFY_EMAIL,
+        timedelta(hours=settings.email_verification_hours),
+    )
+    return _verification_email(settings, email, token)
+
+
+async def resend_verification(
+    db: AsyncSession, settings: Settings, clock: Clock, email: str
+) -> EmailMessage | None:
+    user = await repository.get_user_by_email(db, email)
+    if user is None or user.email_verified_at is not None:
+        return None
+    token = await _issue_token(
+        db,
+        clock,
+        user.id,
+        TokenPurpose.VERIFY_EMAIL,
+        timedelta(hours=settings.email_verification_hours),
+    )
+    return _verification_email(settings, email, token)
+
+
+async def verify_email(db: AsyncSession, clock: Clock, token: str) -> None:
+    now = clock.now()
+    user_id = await repository.consume_email_token(
+        db, purpose=TokenPurpose.VERIFY_EMAIL, token_hash=hash_token(token), now=now
+    )
+    if user_id is None:
+        raise InvalidTokenError()
+    user = await repository.get_user(db, user_id)
+    user.email_verified_at = user.email_verified_at or now
+    await db.commit()
+
+
+async def forgot_password(
+    db: AsyncSession, settings: Settings, clock: Clock, email: str
+) -> EmailMessage | None:
+    user = await repository.get_user_by_email(db, email)
+    if user is None:
+        return None
+    token = await _issue_token(
+        db,
+        clock,
+        user.id,
+        TokenPurpose.RESET_PASSWORD,
+        timedelta(minutes=settings.password_reset_minutes),
+    )
+    link = f"{settings.frontend_base_url}/reset-password?token={token}"
+    return EmailMessage(
+        to=email,
+        subject="Reset your BookLoop password",
+        body=f"Choose a new password with this link:\n\n{link}\n\n"
+        "If you didn't ask for this, you can ignore this email.\n",
+    )
+
+
+async def reset_password(
+    db: AsyncSession, settings: Settings, clock: Clock, *, token: str, password: str
+) -> None:
+    now = clock.now()
+    user_id = await repository.consume_email_token(
+        db, purpose=TokenPurpose.RESET_PASSWORD, token_hash=hash_token(token), now=now
+    )
+    if user_id is None:
+        raise InvalidTokenError()
+    user = await repository.get_user(db, user_id)
+    user.password_hash = await asyncio.to_thread(hash_password, password, settings.bcrypt_rounds)
+    user.email_verified_at = user.email_verified_at or now
+    await repository.revoke_all_sessions(db, user_id, now)
+    await db.commit()
 
 
 async def _password_matches(user: User | None, password: str, settings: Settings) -> bool:
