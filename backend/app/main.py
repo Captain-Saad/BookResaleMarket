@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.core.clock import OffsetClock, SystemClock
 from app.core.config import Settings, get_settings
@@ -15,6 +16,8 @@ from app.core.logging import configure_logging
 from app.core.rate_limit import RedisRateLimiter
 from app.core.redis import create_redis_pool
 from app.core.request_id import REQUEST_ID_HEADER, RequestIdMiddleware
+from app.core.request_limits import RequestSizeLimitMiddleware
+from app.core.security_headers import SecurityHeadersMiddleware
 from app.integrations.email.smtp import SmtpNotifier
 from app.integrations.seller_verification.fake import FakeSellerVerificationProvider
 from app.modules.dev.router import router as dev_router
@@ -62,6 +65,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["Content-Type", "Authorization", REQUEST_ID_HEADER],
         expose_headers=[REQUEST_ID_HEADER],
     )
+    app.add_middleware(RequestSizeLimitMiddleware, max_bytes=settings.max_request_bytes)
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_hosts)
+    app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_production)
     register_exception_handlers(app)
     app.include_router(health_router)
     app.include_router(auth_router)

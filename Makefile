@@ -14,7 +14,7 @@ dev: services
 	$(MAKE) -j2 dev-api dev-web
 
 dev-api:
-	cd backend && uv run uvicorn app.main:create_app --factory --reload
+	cd backend && uv run uvicorn app.main:create_app --factory --reload --no-server-header
 
 dev-web:
 	cd frontend && pnpm dev

@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     redis_url: SecretStr | None = None
     readiness_timeout_seconds: float = 5.0
     cors_origins: list[str] = ["http://localhost:3000"]
+    allowed_hosts: list[str] = ["localhost", "127.0.0.1"]
+    max_request_bytes: int = 1_000_000
     bcrypt_rounds: int = 12
     smtp_host: str = "localhost"
     smtp_port: int = 1025
@@ -34,6 +36,11 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.env == "production"
+
+    @property
+    def trusted_hosts(self) -> list[str]:
+        """TestClient sends `Host: testserver`, so tests allow it too."""
+        return [*self.allowed_hosts, "testserver"] if self.env == "test" else self.allowed_hosts
 
     @property
     def session_cookie_secure(self) -> bool:

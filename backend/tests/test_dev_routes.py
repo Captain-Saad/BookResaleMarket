@@ -31,6 +31,7 @@ def _production_client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     settings = Settings(
         _env_file=None,
         env="production",
+        allowed_hosts=["testserver"],
         database_url="postgresql://u:p@localhost:6543/db",
         database_direct_url="postgresql://u:p@localhost:5432/db",
         redis_url="redis://localhost:6399/0",

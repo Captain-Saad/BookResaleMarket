@@ -197,3 +197,12 @@ test("staff areas follow roles, and a suspended user is blocked at once", async 
   await expect(userPage.getByRole("heading", { level: 1 })).toHaveText("Account suspended");
   await userContext.close();
 });
+
+test("the real API sends security headers and hides its server", async ({ request }) => {
+  const response = await request.get(`${API}/me`);
+  const headers = response.headers();
+  expect(response.status()).toBe(401);
+  expect(headers["x-content-type-options"]).toBe("nosniff");
+  expect(headers["cache-control"]).toBe("no-store");
+  expect(headers.server).toBeUndefined();
+});

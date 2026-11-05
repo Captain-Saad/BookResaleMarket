@@ -45,7 +45,10 @@ class SellerVerificationStatus(StrEnum):
 
 class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "users"
-    __table_args__ = (CheckConstraint(f"status IN ({_values_sql(UserStatus)})", name="status"),)
+    __table_args__ = (
+        CheckConstraint(f"status IN ({_values_sql(UserStatus)})", name="status"),
+        CheckConstraint("email = lower(email)", name="email_lowercase"),
+    )
 
     email: Mapped[str] = mapped_column(String(320), unique=True)
     password_hash: Mapped[str] = mapped_column(String(100))
@@ -102,7 +105,10 @@ class EmailToken(UUIDPrimaryKeyMixin, Base):
 
 class Address(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "addresses"
-    __table_args__ = (Index("ix_addresses_user_id", "user_id"),)
+    __table_args__ = (
+        Index("ix_addresses_user_id", "user_id"),
+        CheckConstraint("country ~ '^[A-Z]{2}$'", name="country_format"),
+    )
 
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     recipient_name: Mapped[str] = mapped_column(String(100))

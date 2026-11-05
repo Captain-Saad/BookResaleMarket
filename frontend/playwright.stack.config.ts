@@ -22,7 +22,7 @@ export default defineConfig({
   })),
   webServer: [
     {
-      command: `uv run alembic upgrade head && uv run uvicorn app.main:create_app --factory --port ${API_PORT}`,
+      command: `uv run alembic upgrade head && uv run uvicorn app.main:create_app --factory --no-server-header --port ${API_PORT}`,
       cwd: "../backend",
       url: `http://localhost:${API_PORT}/healthz`,
       timeout: 120_000,

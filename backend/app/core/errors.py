@@ -78,7 +78,7 @@ class ServiceUnavailableError(AppError):
     code = "service_unavailable"
 
 
-HTTP_ERROR_CODES = {404: "not_found", 405: "method_not_allowed"}
+HTTP_ERROR_CODES = {404: "not_found", 405: "method_not_allowed", 413: "payload_too_large"}
 
 
 def problem_response(

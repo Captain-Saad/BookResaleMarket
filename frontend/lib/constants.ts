@@ -234,11 +234,23 @@ export const API_PATHS = {
 
 export const ADDRESS_ITEM_PATH = "/api/v1/me/addresses/{address_id}" satisfies keyof paths;
 
+export const FIELD_LIMITS = {
+  email: 320,
+  displayName: 100,
+  phone: 32,
+  recipientName: 100,
+  addressLine: 200,
+  city: 100,
+  region: 100,
+  postalCode: 20,
+} as const;
+
 export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_MAX_BYTES = 72;
 
 export const VALIDATION = {
   required: "This field is required.",
+  tooLong: "This is too long.",
   email: "Enter a valid email address.",
   passwordTooShort: `Use at least ${PASSWORD_MIN_LENGTH} characters.`,
   passwordTooLong: "That password is too long. Use a shorter one.",

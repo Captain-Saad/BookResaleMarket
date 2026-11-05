@@ -73,3 +73,13 @@ for (const path of ["/account", "/orders", "/sell", "/warehouse", "/courier", "/
     await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
   });
 }
+
+test("pages send security headers", async ({ page }) => {
+  const response = await page.goto("/login");
+  const headers = response?.headers() ?? {};
+  expect(headers["x-content-type-options"]).toBe("nosniff");
+  expect(headers["x-frame-options"]).toBe("DENY");
+  expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(headers["permissions-policy"]).toContain("camera=()");
+  expect(headers["x-powered-by"]).toBeUndefined();
+});
