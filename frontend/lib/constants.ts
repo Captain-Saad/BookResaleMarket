@@ -3,7 +3,6 @@ import { Package, Search, Tag, User } from "lucide-react";
 import type { paths } from "@bookloop/api-client/schema";
 import {
   AuthFormId,
-  HealthStatus,
   SellerVerificationStatus,
   ToastTone,
   UserRole,
@@ -170,6 +169,16 @@ export const OVERLAY_LABELS = { close: "Close", dismiss: "Dismiss" } as const;
 
 export const LOADING_LABEL = "Loading…";
 
+export const APP_SHELL = {
+  siteName: SITE_NAME,
+  description: SITE_DESCRIPTION,
+  homeHref: ROUTES.home,
+  searchHref: ROUTES.search,
+  navItems: PRIMARY_NAV,
+  labels: NAV_LABELS,
+  themeToggleLabel: THEME_TOGGLE_LABEL,
+} as const;
+
 export const BACK_HOME_LINK = { href: ROUTES.home, label: "Back to home" } as const;
 
 export const ERROR_PAGE = {
@@ -190,18 +199,6 @@ export const DEV_ROLES = [
   { value: "dispatcher", label: "Dispatcher" },
   { value: "admin", label: "Admin" },
 ] as const;
-
-export const HEALTH_BADGE_LABELS = {
-  [HealthStatus.Checking]: "Checking API…",
-  [HealthStatus.Online]: "API online",
-  [HealthStatus.Offline]: "API offline",
-} as const;
-
-export const HEALTH_BADGE_TONES = {
-  [HealthStatus.Checking]: "neutral",
-  [HealthStatus.Online]: "success",
-  [HealthStatus.Offline]: "danger",
-} as const;
 
 export const SESSION_COOKIE = "bookloop_session";
 

@@ -41,7 +41,7 @@ const AddressManager = ({ copy }: AddressManagerProps) => {
       ) : addresses.length === 0 ? (
         <p className="text-ink-2">{copy.empty}</p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="grid gap-3 lg:grid-cols-2">
           {addresses.map((address) => (
             <li
               key={address.id}

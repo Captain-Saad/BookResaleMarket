@@ -1,42 +1,19 @@
 import AccountNav from "@/components/domain/account-nav";
-import BottomTabBar from "@/components/layout/bottom-tab-bar";
-import SiteFooter from "@/components/layout/site-footer";
-import SiteHeader from "@/components/layout/site-header";
-import {
-  ACCOUNT_NAV,
-  NAV_LABELS,
-  PRIMARY_NAV,
-  ROUTES,
-  SITE_DESCRIPTION,
-  SITE_NAME,
-  THEME_TOGGLE_LABEL,
-} from "@/lib/constants";
+import { ACCOUNT_NAV } from "@/lib/constants";
 import type { ChildrenProps } from "@/lib/types";
 
 const AccountLayout = ({ children }: ChildrenProps) => (
-  <>
-    <div className="pb-24 md:pb-0">
-      <SiteHeader
-        siteName={SITE_NAME}
-        homeHref={ROUTES.home}
-        searchHref={ROUTES.search}
-        navLinks={PRIMARY_NAV}
-        labels={NAV_LABELS}
-        themeToggleLabel={THEME_TOGGLE_LABEL}
+  <main className="flex-1 px-4 py-8">
+    <div className="mx-auto flex w-full max-w-page flex-col gap-6">
+      <AccountNav
+        label={ACCOUNT_NAV.label}
+        links={ACCOUNT_NAV.links}
+        roleLinks={ACCOUNT_NAV.roleLinks}
+        signOutLabel={ACCOUNT_NAV.signOutLabel}
       />
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
-        <AccountNav
-          label={ACCOUNT_NAV.label}
-          links={ACCOUNT_NAV.links}
-          roleLinks={ACCOUNT_NAV.roleLinks}
-          signOutLabel={ACCOUNT_NAV.signOutLabel}
-        />
-        {children}
-      </main>
-      <SiteFooter siteName={SITE_NAME} description={SITE_DESCRIPTION} />
+      {children}
     </div>
-    <BottomTabBar navItems={PRIMARY_NAV} label={NAV_LABELS.main} />
-  </>
+  </main>
 );
 
 export default AccountLayout;

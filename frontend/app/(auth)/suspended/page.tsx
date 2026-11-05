@@ -7,7 +7,7 @@ const { title, description } = PLACEHOLDER_PAGES.suspended;
 export const metadata: Metadata = { title };
 
 const SuspendedPage = () => (
-  <PlaceholderPage title={title} description={description} homeLink={BACK_HOME_LINK} />
+  <PlaceholderPage title={title} description={description} homeLink={BACK_HOME_LINK} narrow />
 );
 
 export default SuspendedPage;

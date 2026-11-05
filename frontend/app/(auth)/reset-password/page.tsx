@@ -23,6 +23,7 @@ const ResetPasswordPage = async ({ searchParams }: TokenPageProps) => {
       title={RESET_LINK_INVALID.title}
       description={RESET_LINK_INVALID.description}
       homeLink={RESET_LINK_INVALID.link}
+      narrow
     />
   );
 };

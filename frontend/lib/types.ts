@@ -15,12 +15,6 @@ export enum ToastTone {
   Danger = "danger",
 }
 
-export enum HealthStatus {
-  Checking = "checking",
-  Online = "online",
-  Offline = "offline",
-}
-
 export enum AuthFormId {
   Login = "login",
   Register = "register",
@@ -127,7 +121,22 @@ export type BottomTabBarProps = { navItems: readonly PrimaryNavItem[]; label: st
 
 export type NavDrawerProps = { navLinks: readonly NavLink[]; labels: NavLabels };
 
-export type PlaceholderPageProps = { title: string; description: string; homeLink: NavLink };
+export type AppShellProps = ChildrenProps & {
+  siteName: string;
+  description: string;
+  homeHref: string;
+  searchHref: string;
+  navItems: readonly PrimaryNavItem[];
+  labels: NavLabels;
+  themeToggleLabel: string;
+};
+
+export type PlaceholderPageProps = {
+  title: string;
+  description: string;
+  homeLink: NavLink;
+  narrow?: boolean;
+};
 
 export type SelectOption = { value: string; label: string };
 
@@ -174,11 +183,6 @@ export type ErrorCardProps = {
 export type ErrorPageProps = {
   error: Error & { digest?: string };
   retry: () => void;
-};
-
-export type HealthBadgeProps = {
-  labels: Readonly<Record<HealthStatus, string>>;
-  tones: Readonly<Record<HealthStatus, "neutral" | "success" | "danger">>;
 };
 
 export type AuthFormValues = Record<string, string>;
