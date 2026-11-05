@@ -19,7 +19,10 @@ import { axeViolations } from "../utils/axe";
 import { server } from "../utils/msw";
 
 const push = vi.hoisted(() => vi.fn());
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/" }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push, refresh: () => {} }),
+  usePathname: () => "/",
+}));
 
 const renderLogin = () =>
   render(

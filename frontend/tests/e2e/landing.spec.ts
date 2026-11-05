@@ -105,7 +105,8 @@ test.describe("navigation", () => {
   });
 
   for (const { path, heading } of PLACEHOLDER_ROUTES) {
-    test(`placeholder ${path} renders and passes axe`, async ({ page }) => {
+    test(`placeholder ${path} renders and passes axe`, async ({ page, context, baseURL }) => {
+      await context.addCookies([{ name: "bookloop_session", value: "test", url: baseURL }]);
       await page.emulateMedia({ reducedMotion: "reduce" });
       const response = await page.goto(path);
       expect(response?.status()).toBe(200);

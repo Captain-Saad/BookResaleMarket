@@ -1,11 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
 
-const API = "http://localhost:8000";
+const API = "http://127.0.0.1:59999";
 const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "*",
-  "Access-Control-Allow-Headers": "*",
+  "Access-Control-Allow-Origin": "http://localhost:3100",
+  "Access-Control-Allow-Credentials": "true",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE",
+  "Access-Control-Allow-Headers": "Content-Type, Accept",
 };
 
 const expectNoAxeViolations = async (page: Page) => {
@@ -64,3 +65,11 @@ test("registering asks the user to check their email", async ({ page }) => {
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page.getByRole("status")).toContainText("Check your email");
 });
+
+for (const path of ["/account", "/orders", "/sell", "/warehouse", "/courier", "/admin"]) {
+  test(`${path} sends a signed-out visitor to sign in`, async ({ page }) => {
+    await page.goto(path);
+    await expect(page).toHaveURL(`/login?next=${encodeURIComponent(path)}`);
+    await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
+  });
+}
