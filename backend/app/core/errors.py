@@ -49,6 +49,11 @@ class ConflictError(AppError):
     code = "conflict"
 
 
+class UnauthorizedError(AppError):
+    status = HTTPStatus.UNAUTHORIZED
+    code = "not_authenticated"
+
+
 class ServiceUnavailableError(AppError):
     status = HTTPStatus.SERVICE_UNAVAILABLE
     code = "service_unavailable"
