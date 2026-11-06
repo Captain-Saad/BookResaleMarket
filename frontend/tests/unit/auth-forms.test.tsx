@@ -146,6 +146,54 @@ describe("AuthForm", () => {
   });
 });
 
+describe("Change password", () => {
+  const renderChange = () =>
+    render(
+      <AuthForm
+        formId={AuthFormId.ChangePassword}
+        copy={AUTH_FORMS[AuthFormId.ChangePassword]}
+        errorMessages={AUTH_ERROR_MESSAGES}
+      />,
+    );
+
+  const submit = async (current: string, next: string) => {
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Current password"), current);
+    await user.type(screen.getByLabelText("New password"), next);
+    await user.click(screen.getByRole("button", { name: "Change password" }));
+  };
+
+  it("sends the current and new passwords", async () => {
+    let body: unknown;
+    server.use(
+      http.post(`${API_BASE_URL}${API_PATHS.changePassword}`, async ({ request }) => {
+        body = await request.json();
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    renderChange();
+    await submit("a-good-password", "a-new-password");
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      AUTH_FORMS[AuthFormId.ChangePassword].successMessage,
+    );
+    expect(body).toEqual({ currentPassword: "a-good-password", newPassword: "a-new-password" });
+  });
+
+  it("explains a wrong current password", async () => {
+    renderChange();
+    await submit("wrong-password", "a-new-password");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      AUTH_ERROR_MESSAGES.invalid_current_password,
+    );
+  });
+
+  it("applies the usual rules to the new password", async () => {
+    renderChange();
+    await submit("a-good-password", "short");
+    expect(await screen.findByText(VALIDATION.passwordTooShort)).toBeInTheDocument();
+  });
+});
+
 describe("VerifyEmailStatus", () => {
   it("submits a single-use token only once, even in Strict Mode", async () => {
     const seen = vi.fn(() => new HttpResponse(null, { status: 204 }));
