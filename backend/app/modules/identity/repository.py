@@ -90,6 +90,20 @@ async def revoke_all_sessions(db: AsyncSession, user_id: UUID, now: datetime) ->
     )
 
 
+async def revoke_other_sessions(
+    db: AsyncSession, user_id: UUID, keep_session_id: UUID, now: datetime
+) -> None:
+    await db.execute(
+        update(AuthSession)
+        .where(
+            AuthSession.user_id == user_id,
+            AuthSession.id != keep_session_id,
+            AuthSession.revoked_at.is_(None),
+        )
+        .values(revoked_at=now)
+    )
+
+
 async def replace_email_token(
     db: AsyncSession,
     *,

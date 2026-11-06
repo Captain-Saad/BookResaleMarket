@@ -13,6 +13,7 @@ from app.core.config import Settings
 from app.core.errors import (
     ConflictError,
     ForbiddenError,
+    InvalidCurrentPasswordError,
     InvalidTokenError,
     NotFoundError,
     UnauthorizedError,
@@ -182,6 +183,36 @@ async def reset_password(
     user.password_hash = await asyncio.to_thread(hash_password, password, settings.bcrypt_rounds)
     user.email_verified_at = user.email_verified_at or now
     await repository.revoke_all_sessions(db, user_id, now)
+    await db.commit()
+
+
+async def change_password(
+    db: AsyncSession,
+    settings: Settings,
+    clock: Clock,
+    auth: "Authenticated",
+    *,
+    current_password: str,
+    new_password: str,
+) -> None:
+    """A session alone isn't enough: someone using a signed-in device could otherwise lock the
+    owner out. The current password proves it's the owner."""
+    user = auth.user
+    if not await asyncio.to_thread(verify_password, current_password, user.password_hash):
+        raise InvalidCurrentPasswordError()
+    now = clock.now()
+    user.password_hash = await asyncio.to_thread(
+        hash_password, new_password, settings.bcrypt_rounds
+    )
+    await repository.revoke_other_sessions(db, user.id, auth.session.id, now)
+    await repository.add_audit(
+        db,
+        actor_user_id=user.id,
+        action="password.changed",
+        target_type="user",
+        target_id=str(user.id),
+        now=now,
+    )
     await db.commit()
 
 

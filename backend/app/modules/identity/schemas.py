@@ -55,6 +55,11 @@ class ResetPasswordRequest(TokenRequest):
     password: NewPassword
 
 
+class ChangePasswordRequest(ApiModel):
+    current_password: str = Field(min_length=1, max_length=1000)
+    new_password: NewPassword
+
+
 class AccountResponse(ApiModel):
     email: str
     email_verified: bool
