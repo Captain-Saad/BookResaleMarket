@@ -26,6 +26,7 @@ export enum AuthFormId {
   ForgotPassword = "forgot-password",
   ResetPassword = "reset-password",
   ResendVerification = "resend-verification",
+  ChangePassword = "change-password",
 }
 
 export enum VerifyEmailStatus {
