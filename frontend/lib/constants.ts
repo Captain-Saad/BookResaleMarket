@@ -176,7 +176,7 @@ export const APP_SHELL = {
   siteName: SITE_NAME,
   description: SITE_DESCRIPTION,
   homeHref: ROUTES.home,
-  searchHref: ROUTES.search,
+  searchHref: ROUTES.books,
   navItems: PRIMARY_NAV,
   labels: NAV_LABELS,
   themeToggleLabel: THEME_TOGGLE_LABEL,

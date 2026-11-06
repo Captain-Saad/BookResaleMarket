@@ -17,7 +17,7 @@ const ACCOUNT = {
 
 const PAGES = [
   "/",
-  "/search",
+  "/books",
   "/orders",
   "/sell",
   "/warehouse",
