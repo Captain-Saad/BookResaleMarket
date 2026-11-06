@@ -211,6 +211,8 @@ export const SESSION_COOKIE = "bookloop_session";
 
 export const NEXT_PARAM = "next";
 
+export const TOKEN_PARAM = "token";
+
 export const GUARD_TIMEOUT_MS = 3000;
 
 export const ROUTE_GUARDS = [

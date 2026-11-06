@@ -27,7 +27,6 @@ const PAGES = [
   { path: "/login", heading: "Sign in" },
   { path: "/register", heading: "Create your account" },
   { path: "/forgot-password", heading: "Reset your password" },
-  { path: "/reset-password", heading: "Change your password" },
   { path: "/reset-password?token=abc", heading: "Choose a new password" },
   { path: "/verify-email", heading: "Verify your email" },
   { path: "/suspended", heading: "Account suspended" },
@@ -73,3 +72,17 @@ for (const path of ["/account", "/orders", "/sell", "/warehouse", "/courier", "/
     await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
   });
 }
+
+test("changing the password sends a signed-out visitor to forgot password", async ({ page }) => {
+  await page.goto("/reset-password");
+  await expect(page).toHaveURL("/forgot-password");
+  await expect(page.getByRole("heading", { level: 1, name: "Reset your password" })).toBeVisible();
+});
+
+test("a signed-in visitor can change their password", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "bookloop_session", value: "test", url: baseURL }]);
+  await page.goto("/reset-password");
+  await expect(page).toHaveURL("/reset-password");
+  await expect(page.getByRole("heading", { level: 1, name: "Change your password" })).toBeVisible();
+  await expect(page.getByLabel("Current password")).toBeVisible();
+});
