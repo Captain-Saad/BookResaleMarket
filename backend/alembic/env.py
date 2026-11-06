@@ -12,6 +12,7 @@ from alembic import context
 from app.core.config import get_settings
 from app.core.db import to_async_url
 from app.core.models import Base
+from app.modules.identity import models as _identity_models  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

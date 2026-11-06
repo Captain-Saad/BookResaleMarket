@@ -25,8 +25,9 @@ def to_async_url(url: str) -> str:
 
 
 def create_engine(database_url: str) -> AsyncEngine:
-    """Transaction-mode PgBouncer can't reuse prepared statements across transactions,
-    so asyncpg's statement cache is disabled and every statement gets a unique name."""
+    """Transaction-mode PgBouncer can't reuse prepared statements across transactions, so both
+    asyncpg's and SQLAlchemy's statement caches are disabled and every statement gets a unique
+    name."""
     return create_async_engine(
         to_async_url(database_url),
         pool_pre_ping=True,
@@ -34,6 +35,7 @@ def create_engine(database_url: str) -> AsyncEngine:
         max_overflow=5,
         connect_args={
             "statement_cache_size": 0,
+            "prepared_statement_cache_size": 0,
             "prepared_statement_name_func": lambda: f"__asyncpg_{uuid4()}__",
         },
     )
