@@ -33,7 +33,7 @@ def _values_sql(values: type[StrEnum]) -> str:
 
 class TokenPurpose(StrEnum):
     VERIFY_EMAIL = "verify_email"
-    RESET_PASSWORD = "reset_password"  # noqa: S105
+    RESET_PASSWORD = "reset_password"  # noqa: S105  # nosec B105
 
 
 class SellerVerificationStatus(StrEnum):
