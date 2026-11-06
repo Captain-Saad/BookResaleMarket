@@ -43,6 +43,15 @@ describe("ProfileForm", () => {
   });
 });
 
+describe("ProfileForm password link", () => {
+  it("links to changing the password", async () => {
+    render(<ProfileForm copy={PROFILE_FORM_COPY} />);
+    expect(
+      await screen.findByRole("link", { name: PROFILE_FORM_COPY.passwordLink.label }),
+    ).toHaveAttribute("href", PROFILE_FORM_COPY.passwordLink.href);
+  });
+});
+
 describe("AddressManager", () => {
   it("adds an address, then deletes it after confirming", async () => {
     render(<AddressManager copy={ADDRESS_MANAGER_COPY} />);
