@@ -74,7 +74,7 @@ Out of scope v1: non-book items, rental/subscription, in-app chat (order notific
 | DB | **Supabase Postgres** (schema owned by Alembic, *not* the dashboard) |
 | ORM | **SQLAlchemy 2.0 (async, typed `Mapped[]`) + Alembic**. Chosen over Prisma/SQLModel/Django-ORM because we need row-level locks (`SELECT … FOR UPDATE`), partial unique indexes, exclusion constraints, deferred constraint triggers and raw SQL escape hatches. |
 | Driver | `asyncpg`. Connect via Supabase **pooler**; with transaction-mode pgbouncer set `statement_cache_size=0` and `prepared_statement_name_func` appropriately. Migrations use the **direct** connection. |
-| Auth | **Supabase Auth** issues JWTs; FastAPI **verifies** them (JWKS/`aud`/`iss`/`exp`) and maps `sub` → `users.id`. Roles live in our DB (`user_roles`), never trusted from client-editable JWT claims. |
+| Auth | **Custom auth in FastAPI** (not Supabase Auth). Passwords are hashed with **bcrypt**. Logins create **opaque server sessions**: a random token in an HttpOnly cookie, stored hashed in `auth_sessions`. Roles live in our DB (`user_roles`) and are read on every request. Supabase provides Postgres and Storage only. |
 | Storage | Supabase Storage (private buckets, signed URLs) for listing photos/ID docs |
 | Jobs/queue | Redis + **ARQ** (async) for webhooks fan-out, label generation, courier assignment, payout release, reservation expiry, emails |
 | Payments | **Stripe Connect** (separate charges & transfers → platform holds funds, transfers on release) behind `PaymentGateway` protocol. *Verify current Stripe docs/limits at implementation time (hold duration, EU requirements).* |
@@ -94,7 +94,7 @@ Repo layout:
 bookloop/
 ├─ docs/                     # ROADMAP.md, backend.md, frontend.md (PROGRESS.md local-only)
 ├─ Makefile                  # check, test, dev, migrate, seed, openapi
-├─ docker-compose.yml        # redis, (optional local pg), mailhog
+├─ docker-compose.yml        # redis, (optional local pg), mailpit (local test inbox)
 ├─ supabase/                 # config.toml, seed notes, storage bucket policies
 ├─ packages/api-client/      # generated TS client from OpenAPI (frontend consumes)
 ├─ frontend/                # Next.js (see frontend.md)
@@ -124,7 +124,7 @@ Dependency direction: `router → service → repository → models`. Services n
 8. **Idempotency:** all mutating money endpoints and all webhooks require/record an idempotency key (`idempotency_keys` table, unique on key+scope).
 9. **Concurrency (NFR-4):** listing purchase uses `SELECT … FOR UPDATE` on the listing row **and** a DB-level guarantee: partial unique index on `orders(listing_id) WHERE status NOT IN ('cancelled','expired','refunded')`. Both must exist.
 10. **API contract:** REST JSON, `/api/v1`, OpenAPI is the contract; cursor pagination; RFC 9457 problem+json errors with stable `code` strings; `X-Request-ID` on every response.
-11. **RLS = defense in depth:** enable RLS on every table in `public`, **deny by default**. Backend connects with a privileged role; the browser **never** queries tables directly (only Supabase Auth + signed Storage uploads). Authorization is enforced in the API (§5).
+11. **RLS = defense in depth:** enable RLS on every table in `public`, **deny by default**. Backend connects with a privileged role; the browser **never** queries tables directly (only signed Storage uploads). Authorization is enforced in the API (§5).
 12. **Fulfillment Strategy (§4.3)** is the only place the two models diverge.
 
 ---
@@ -162,8 +162,11 @@ registry = {"warehouse": WarehouseFulfillment(), "on_demand": OnDemandFulfillmen
 ## 5. Security requirements (apply to every module)
 
 **Authentication & session**
-- Verify Supabase JWT on every request (signature via JWKS cache, `iss`, `aud`, `exp`, `nbf`); reject `alg=none`. Short access tokens; refresh handled by Supabase on the web side via HttpOnly cookies (`@supabase/ssr`).
-- MFA required for Admin, Warehouse Staff, Dispatcher; strongly encouraged for sellers (payout changes require recent re-auth).
+- Session cookie: 256-bit random token from `secrets`, only its SHA-256 hash stored; `HttpOnly`, `SameSite=Lax`, `Secure` outside local development. Sessions have an idle and an absolute expiry, rotate on login and password change, and are revoked on logout and password reset. Every request looks up the session and the user's status, so a suspended user gets `403 account_suspended` on their next request.
+- Passwords: bcrypt, 8 characters minimum, and over 72 bytes rejected instead of truncated, because bcrypt ignores anything past 72 bytes. Login failures return the same error whether or not the email exists, and "forgot password" always answers the same way.
+- Email verification and password-reset tokens: random, stored hashed, single use, short expiry.
+- CSRF: `SameSite=Lax` plus an `Origin` check against the allowed origins on every state-changing request.
+- MFA required for Admin, Warehouse Staff, Dispatcher (not built in S1; must ship before any staff account goes live); strongly encouraged for sellers (payout changes require recent re-auth).
 - Account suspension (FR-35) is checked **per request** (cached ≤ 30 s) so it takes effect immediately.
 
 **Authorization**
@@ -213,11 +216,11 @@ Every module also: factories, OpenAPI docs with examples, migrations that are re
 - **TEST GATE:** `make dev` boots; `/healthz` 200; `/docs` loads; `make check` green; `alembic upgrade head && alembic downgrade base` works against Supabase dev project; CI green on PR.
 
 #### M1 — Identity, roles, profiles, seller verification (FR-33, 34, 35; NFR-2 partly)
-- **DB:** `users, profiles, user_roles, addresses, seller_verifications, audit_log`.
-- **Endpoints:** `GET/PATCH /me`, `POST /me/roles/seller` (become seller), `CRUD /me/addresses`, `POST /me/seller-verification` (starts Stripe Connect onboarding/identity), `POST /admin/users/{id}/suspend|unsuspend`, `GET /admin/users`.
-- **Rules → tests:** one account can be buyer+seller; seller **cannot make a listing purchasable** until verified (FR-34); suspended user is rejected on the next request (FR-35); role escalation via API impossible; JWT validation negatives (expired, wrong aud, bad sig); route-auth enumeration test.
-- **Commits:** (1) models+migration+RLS, (2) auth deps + JWT verification, (3) endpoints+tests.
-- **TEST GATE:** register via Supabase (web or curl), call `/me`; become seller; start verification (test mode); admin suspends user → their next call returns 403 `account_suspended`; non-admin calling admin route → 403/404.
+- **DB:** `users, auth_sessions, email_tokens, profiles, user_roles, addresses, seller_verifications, audit_log`.
+- **Endpoints:** `POST /auth/register|login|logout|verify-email|resend-verification|forgot-password|reset-password`, `GET/PATCH /me`, `POST /me/roles/seller` (become seller), `CRUD /me/addresses`, `POST /me/seller-verification` (starts Stripe Connect onboarding/identity), `POST /admin/users/{id}/suspend|unsuspend`, `GET /admin/users`.
+- **Rules → tests:** one account can be buyer+seller; seller **cannot make a listing purchasable** until verified (FR-34); suspended user is rejected on the next request (FR-35); role escalation via API impossible; session negatives (missing, unknown, expired, revoked, tampered cookie); password and token rules; no email enumeration; route-auth enumeration test.
+- **Commits:** (1) models+migration+RLS, (2) password hashing + sessions + auth deps, (3) endpoints+tests.
+- **TEST GATE:** register (web or curl), open the verification email in the local test inbox, log in, call `/me`; become seller; start verification (test mode); admin suspends user → their next call returns 403 `account_suspended`; non-admin calling admin route → 403/404.
 
 ### PHASE B — Catalog
 
