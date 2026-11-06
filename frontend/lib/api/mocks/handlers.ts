@@ -60,6 +60,14 @@ const authHandlers = [
     if (token !== "valid-token") return problem(400, "invalid_token");
     return new HttpResponse(null, withRequestId({ status: 204 }));
   }),
+  http.post<never, { currentPassword: string }>(
+    url(API_PATHS.changePassword),
+    async ({ request }) => {
+      const { currentPassword } = await request.json();
+      if (currentPassword === "wrong-password") return problem(400, "invalid_current_password");
+      return new HttpResponse(null, withRequestId({ status: 204 }));
+    },
+  ),
   http.post<never, { token: string }>(url(API_PATHS.verifyEmail), async ({ request }) => {
     const { token } = await request.json();
     if (token !== "valid-token") return problem(400, "invalid_token");

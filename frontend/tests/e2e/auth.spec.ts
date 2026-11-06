@@ -26,7 +26,7 @@ const PAGES = [
   { path: "/login", heading: "Sign in" },
   { path: "/register", heading: "Create your account" },
   { path: "/forgot-password", heading: "Reset your password" },
-  { path: "/reset-password", heading: "Reset link missing" },
+  { path: "/reset-password", heading: "Change your password" },
   { path: "/reset-password?token=abc", heading: "Choose a new password" },
   { path: "/verify-email", heading: "Verify your email" },
   { path: "/suspended", heading: "Account suspended" },
