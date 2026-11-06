@@ -26,7 +26,7 @@ export const SECTION_IDS = { shelves: "shelves", howItWorks: "how-it-works" } as
 
 export const ROUTES = {
   home: "/",
-  search: "/search",
+  books: "/books",
   login: "/login",
   register: "/register",
   forgotPassword: "/forgot-password",
@@ -38,7 +38,7 @@ export const ROUTES = {
 } as const;
 
 export const PRIMARY_NAV = [
-  { id: "browse", href: ROUTES.search, label: "Browse" },
+  { id: "browse", href: ROUTES.books, label: "Browse" },
   { id: "sell", href: "/sell", label: "Sell" },
   { id: "orders", href: "/orders", label: "Orders" },
   { id: "account", href: ROUTES.login, label: "Account" },
@@ -47,7 +47,10 @@ export const PRIMARY_NAV = [
 export const NAV_ICONS = { browse: Search, sell: Tag, orders: Package, account: User } as const;
 
 export const PLACEHOLDER_PAGES = {
-  search: { title: "Search", description: "Search and filters arrive in slice S3." },
+  books: {
+    title: "Books",
+    description: "Every book for sale, with search and filters, arrives in slice S3.",
+  },
   orders: { title: "Your orders", description: "Order history and tracking arrive in slice S8." },
   sell: { title: "Sell a book", description: "The listing wizard arrives in slice S2." },
   warehouse: { title: "Warehouse console", description: "The staff console arrives in slice S6." },
