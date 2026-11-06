@@ -46,7 +46,7 @@ test.describe("landing page", () => {
 });
 
 const PLACEHOLDER_ROUTES = [
-  { path: "/search", heading: "Search" },
+  { path: "/books", heading: "Books" },
   { path: "/login", heading: "Sign in" },
   { path: "/orders", heading: "Your orders" },
   { path: "/sell", heading: "Sell a book" },
@@ -57,7 +57,7 @@ const PLACEHOLDER_ROUTES = [
 
 test.describe("navigation", () => {
   test("shows the right navigation for the screen size", async ({ page }) => {
-    await page.goto("/search");
+    await page.goto("/books");
     const width = page.viewportSize()?.width ?? 0;
     const mainNav = page.getByRole("navigation", { name: "Main" });
     const menuButton = page.getByRole("button", { name: "Open menu" });
@@ -105,7 +105,8 @@ test.describe("navigation", () => {
   });
 
   for (const { path, heading } of PLACEHOLDER_ROUTES) {
-    test(`placeholder ${path} renders and passes axe`, async ({ page }) => {
+    test(`placeholder ${path} renders and passes axe`, async ({ page, context, baseURL }) => {
+      await context.addCookies([{ name: "bookloop_session", value: "test", url: baseURL }]);
       await page.emulateMedia({ reducedMotion: "reduce" });
       const response = await page.goto(path);
       expect(response?.status()).toBe(200);

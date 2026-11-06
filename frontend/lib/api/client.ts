@@ -35,7 +35,11 @@ export const apiFetch = async (path: string, init: RequestInit = {}): Promise<Ap
   if (!headers.has("Accept")) headers.set("Accept", "application/json");
   if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers,
+    credentials: "include",
+  });
   const requestId = response.headers.get("X-Request-ID");
   if (requestId) recordRequestId(requestId);
 
@@ -54,6 +58,7 @@ const requestIdMiddleware: Middleware = {
 
 export const api = createClient<paths>({
   baseUrl: API_BASE_URL,
+  credentials: "include",
   fetch: (request) => globalThis.fetch(request),
 });
 api.use(requestIdMiddleware);

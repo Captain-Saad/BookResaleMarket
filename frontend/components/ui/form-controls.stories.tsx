@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import Checkbox from "@/components/ui/checkbox";
+import FormField from "@/components/ui/form-field";
 import Input from "@/components/ui/input";
 import Select from "@/components/ui/select";
 import Switch from "@/components/ui/switch";
@@ -84,6 +85,19 @@ export const CheckboxAndSwitch: Story = {
         <Switch id="story-notify" defaultChecked />
         <label htmlFor="story-notify">Email me when it sells</label>
       </div>
+    </div>
+  ),
+};
+
+export const FieldWithLabel: Story = {
+  render: () => (
+    <div className="flex max-w-sm flex-col gap-4">
+      <FormField id="story-field-hint" label="Password" hint="At least 8 characters.">
+        <Input id="story-field-hint" type="password" aria-describedby="story-field-hint-hint" />
+      </FormField>
+      <FormField id="story-field-error" label="Email" error="Enter a valid email address.">
+        <Input id="story-field-error" aria-invalid aria-describedby="story-field-error-error" />
+      </FormField>
     </div>
   ),
 };
