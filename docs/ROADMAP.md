@@ -34,11 +34,13 @@ Approximately **82 PRs** in total (down from 140). S0-00 and S0-01 are already d
 ## S1 — Auth, roles, profiles (F1 + M1)
 - **S1-01** FE Auth screens: login, register, reset, verify, shared form pattern (react-hook-form + zod), mock.
 - **S1-02** FE Account shell: profile, addresses, become-a-seller, verification, suspended-account screens, mock.
-- **S1-03** BE Identity foundation: users/profiles/roles tables + migration + RLS deny-by-default, Supabase JWT verification, `current_user` dependency, `GET/PATCH /me`, tests.
-- **S1-04** BE Addresses CRUD (owner-scoped, 404 for others) + become seller + `seller_verifications` behind an interface with a fake adapter.
-- **S1-05** BE Admin suspend/unsuspend + `audit_log` + per-request suspension check + route-auth enumeration test + JWT negative tests.
-- **S1-06** WIRE `@supabase/ssr` cookies, real login/register/logout, middleware route guards, role-aware nav.
-- **S1-07** WIRE `/me`, addresses, seller verification, suspended screen.
+- **S1-03** BE Identity foundation: users/sessions/profiles/roles tables + migration + RLS deny-by-default, bcrypt passwords, opaque session cookies, register/login/logout, `current_user` dependency, `GET/PATCH /me`, tests.
+- **S1-04** BE Email verification + password reset: `Notifier` email adapter, local test inbox in `docker-compose`, single-use tokens, rate limiting on auth routes, tests.
+- **S1-05** BE Addresses CRUD (owner-scoped, 404 for others) + become seller + `seller_verifications` behind an interface with a fake adapter.
+- **S1-06** BE Admin suspend/unsuspend + `audit_log` + per-request suspension check + route-auth enumeration test + session negative tests.
+- **S1-07** WIRE Real login/register/logout with the session cookie, route guards, role-aware nav.
+- **S1-08** WIRE `/me`, addresses, seller verification, suspended screen.
+- **S1-09** Hardening: security response headers on the API and web app, allowed hosts, request size limit, `no-store` on API responses, database checks for email and country, frontend max lengths. Moved up from S13-02.
 
 **→ S1 GATE.**
 
@@ -54,11 +56,11 @@ Approximately **82 PRs** in total (down from 140). S0-00 and S0-01 are already d
 **→ S2 GATE.**
 
 ## S3 — Search and listing detail (F3 + M3)
-- **S3-01** FE BookCard, condition/fulfillment badges, search page, filters (rail and mobile sheet), skeletons (mock).
+- **S3-01** FE BookCard, condition/fulfillment badges, the `/books` page listing every book with search and filters built in (rail and mobile sheet), skeletons (mock).
 - **S3-02** FE Listing detail: gallery, purchase card, sticky mobile bar (mock).
 - **S3-03** BE FTS + trigram indexes, seed script (≥ 500 listings), search endpoint with filters and cursor pagination.
 - **S3-04** BE Detail endpoint, privacy rules (city/region only), availability freshness, performance test.
-- **S3-05** WIRE Search, filters, URL state.
+- **S3-05** WIRE `/books` search, filters, URL state (`/books?q=…&condition=…`).
 - **S3-06** WIRE Detail, SEO metadata, JSON-LD.
 
 **→ S3 GATE.**
@@ -150,7 +152,7 @@ Approximately **82 PRs** in total (down from 140). S0-00 and S0-01 are already d
 
 ## S13 — Hardening and release (F13 + M13 rest)
 - **S13-01** Full a11y audit + fixes, visual-regression baselines.
-- **S13-02** Performance budgets, bundle analysis, security headers, CSP, secrets/rotation docs.
+- **S13-02** Performance budgets, bundle analysis, CSP, secrets/rotation docs (other security headers arrived in S1-09).
 - **S13-03** Security scans, ASVS L2 checklist, traceability document (every FR/NFR → test).
 - **S13-04** Load tests + chaos tests (provider/Redis down).
 - **S13-05** Runbook, deploy config, backup/restore drill.

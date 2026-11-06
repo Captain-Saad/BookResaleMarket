@@ -21,9 +21,9 @@
 | Styling | **Tailwind CSS** + CSS variables for tokens; no CSS-in-JS runtime |
 | Primitives | **shadcn/ui on Radix** — heavily restyled into the glass system (never ship default look) |
 | Motion | `motion` (Framer Motion) with a shared motion-preset file; CSS for micro-interactions |
-| Data | Server Components fetch from FastAPI with the user's JWT; **TanStack Query** for client mutations/live data |
+| Data | Server Components fetch from FastAPI with the user's session cookie; **TanStack Query** for client mutations/live data |
 | Forms | react-hook-form + zod (schemas mirror OpenAPI constraints) |
-| Auth | `@supabase/ssr` (HttpOnly cookies) — **auth only**; the browser never queries Supabase tables |
+| Auth | Custom auth in FastAPI with an HttpOnly session cookie; the browser never queries Supabase tables |
 | Payments | Stripe Elements / Payment Element (no card data in our DOM) |
 | i18n/region | `next-intl`; `Intl.NumberFormat`/`DateTimeFormat`; region config from API |
 | Icons/Fonts | `lucide-react`; `next/font`: **Fraunces** (display serif, "book" feel) + **Geist/Inter** (UI) + Geist Mono (ISBN, tracking) |
@@ -144,7 +144,7 @@ Rules: touch targets ≥ 44×44; no horizontal page scroll at any width; support
 ---
 
 ## 6. UX & screen inventory (by role)
-**Public/Buyer:** Home (hero search, featured shelves, how-it-works), Search & filter (FR-7), Listing detail (FR-8: price, grade, notes, photos, fulfillment badge, delivery window, city/region only), Auth screens, Checkout (itemized fee/tax, region disclosures, EU withdrawal notice FR-31, Stripe Payment Element), Order confirmation, My Orders, Order detail + live tracking (FR-19), Confirm receipt, Open dispute (FR-26), EU withdrawal request, Rate seller (FR-36), Notifications, Profile/addresses, Data export/erasure (NFR-2).
+**Public/Buyer:** Home (hero search, featured shelves, how-it-works), Books (`/books`: every listed book, with search and filters built in; FR-7), Listing detail (FR-8: price, grade, notes, photos, fulfillment badge, delivery window, city/region only), Auth screens, Checkout (itemized fee/tax, region disclosures, EU withdrawal notice FR-31, Stripe Payment Element), Order confirmation, My Orders, Order detail + live tracking (FR-19), Confirm receipt, Open dispute (FR-26), EU withdrawal request, Rate seller (FR-36), Notifications, Profile/addresses, Data export/erasure (NFR-2).
 **Seller:** Become-a-seller + identity verification (FR-34), Listing wizard (ISBN lookup → condition & notes → photos → fulfillment choice with clear comparison → price → review), My listings (status chips: incoming/active/reserved/sold), Inbound label & shipment tracking (warehouse), Pickup status (on-demand), Payout ledger (FR-24: pending/released/history), Ratings.
 **Warehouse staff:** Inbound queue (FR-10), Intake inspection form (pass / mismatch / damaged / not received, photos), Storage location assign + "where is book X" lookup (FR-12), Pick/pack queue, Ship with tracking (FR-14).
 **Courier:** Task list, Task detail (address, navigation deep link), Pickup completion with **condition-confirm step** (match / does not match + photo) (FR-16), Delivery completion.
@@ -156,7 +156,7 @@ UX principles: money is always itemized and never surprising; every destructive/
 ---
 
 ## 7. Security (frontend)
-- Tokens only in **HttpOnly, Secure, SameSite=Lax cookies** (`@supabase/ssr`). Never `localStorage`.
+- The session token lives only in an **HttpOnly, Secure, SameSite=Lax cookie** set by the API. Never `localStorage`.
 - Strict **CSP with nonces** (script/style/img/frame/connect allowlist incl. Stripe, Supabase, API origin), `X-Frame-Options/frame-ancestors none`, `Referrer-Policy`, `Permissions-Policy`, HSTS, `nosniff` — configured in `next.config` + middleware.
 - `middleware.ts` guards route groups by role **for UX only**; the API is authoritative. Never hide a button as a security measure.
 - Only `NEXT_PUBLIC_*` vars reach the browser; secrets stay server-side; lint rule blocks importing server modules into client components (`server-only`).

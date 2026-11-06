@@ -35,6 +35,22 @@ describe("apiFetch", () => {
   });
 });
 
+describe("apiFetch with an empty body", () => {
+  it("handles a 204 that is labelled as JSON", async () => {
+    server.use(
+      http.post(
+        `${API_BASE_URL}/empty`,
+        () =>
+          new HttpResponse(null, { status: 204, headers: { "Content-Type": "application/json" } }),
+      ),
+    );
+    const result = await apiFetch("/empty", { method: "POST" });
+    expect(result.ok).toBe(true);
+    expect(result.status).toBe(204);
+    expect(result.body).toBe("");
+  });
+});
+
 describe("api (typed client generated from OpenAPI)", () => {
   it("returns typed data and records the request ID", async () => {
     const { data, response } = await api.GET("/healthz");
