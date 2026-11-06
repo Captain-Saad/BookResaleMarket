@@ -357,6 +357,7 @@ export const PROFILE_FORM_COPY = {
     { name: "phone", label: "Phone (optional)", type: "tel", autoComplete: "tel" },
   ],
   submitLabel: "Save changes",
+  passwordLink: { href: ROUTES.resetPassword, label: "Change password" },
 } as const;
 
 export const EMPTY_ADDRESS = {

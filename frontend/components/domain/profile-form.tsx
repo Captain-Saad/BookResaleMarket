@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import FormFields from "@/components/domain/form-fields";
 import ResourceState from "@/components/domain/resource-state";
 import Badge from "@/components/ui/badge";
@@ -42,6 +43,12 @@ const ProfileForm = ({ copy }: ProfileFormProps) => {
           </div>
         </form>
       )}
+      <Link
+        href={copy.passwordLink.href}
+        className="inline-flex min-h-11 items-center self-start text-sm text-ink-2 underline underline-offset-4 hover:text-ink-1"
+      >
+        {copy.passwordLink.label}
+      </Link>
     </section>
   );
 };

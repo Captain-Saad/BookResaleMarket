@@ -248,6 +248,7 @@ export type ProfileFormCopy = AccountCopy & {
   emailUnverified: string;
   fields: readonly FormFieldConfig[];
   submitLabel: string;
+  passwordLink: NavLink;
 };
 
 export type ProfileFormProps = { copy: ProfileFormCopy };
