@@ -28,7 +28,7 @@ export const SECTION_IDS = { shelves: "shelves", howItWorks: "how-it-works" } as
 
 export const ROUTES = {
   home: "/",
-  search: "/books",
+  books: "/books",
   login: "/login",
   register: "/register",
   forgotPassword: "/forgot-password",
