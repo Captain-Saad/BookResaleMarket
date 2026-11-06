@@ -83,3 +83,17 @@ test("pages send security headers", async ({ page }) => {
   expect(headers["permissions-policy"]).toContain("camera=()");
   expect(headers["x-powered-by"]).toBeUndefined();
 });
+
+test("changing the password sends a signed-out visitor to forgot password", async ({ page }) => {
+  await page.goto("/reset-password");
+  await expect(page).toHaveURL("/forgot-password");
+  await expect(page.getByRole("heading", { level: 1, name: "Reset your password" })).toBeVisible();
+});
+
+test("a signed-in visitor can change their password", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "bookloop_session", value: "test", url: baseURL }]);
+  await page.goto("/reset-password");
+  await expect(page).toHaveURL("/reset-password");
+  await expect(page.getByRole("heading", { level: 1, name: "Change your password" })).toBeVisible();
+  await expect(page.getByLabel("Current password")).toBeVisible();
+});
