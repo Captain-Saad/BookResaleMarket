@@ -6,6 +6,8 @@ from typing import Literal, Self
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+SESSION_COOKIE = "bookloop_session"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="BOOKLOOP_", env_file=".env", extra="ignore")
@@ -19,10 +21,17 @@ class Settings(BaseSettings):
     redis_url: SecretStr | None = None
     readiness_timeout_seconds: float = 5.0
     cors_origins: list[str] = ["http://localhost:3000"]
+    bcrypt_rounds: int = 12
+    session_idle_minutes: int = 60 * 24 * 7
+    session_absolute_days: int = 30
 
     @property
     def is_production(self) -> bool:
         return self.env == "production"
+
+    @property
+    def session_cookie_secure(self) -> bool:
+        return self.env not in {"development", "test"}
 
     @model_validator(mode="after")
     def _require_services_outside_tests(self) -> Self:
