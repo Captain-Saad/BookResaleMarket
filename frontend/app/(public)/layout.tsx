@@ -17,7 +17,7 @@ const PublicLayout = ({ children }: ChildrenProps) => (
       <SiteHeader
         siteName={SITE_NAME}
         homeHref={ROUTES.home}
-        searchHref={ROUTES.search}
+        searchHref={ROUTES.books}
         navLinks={PRIMARY_NAV}
         labels={NAV_LABELS}
         themeToggleLabel={THEME_TOGGLE_LABEL}
