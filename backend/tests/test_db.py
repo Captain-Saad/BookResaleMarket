@@ -43,10 +43,7 @@ def test_repeated_queries_survive_the_real_transaction_pooler() -> None:
     async def worker(engine: AsyncEngine) -> None:
         async with AsyncSession(engine) as session:
             for _ in range(ROUNDS):
-                await session.execute(
-                    text("SELECT count(*) FROM users WHERE email = :email"),
-                    {"email": "nobody@example.com"},
-                )
+                await session.execute(text("SELECT length(:value)"), {"value": "pooler"})
                 await session.commit()
 
     async def run() -> None:
