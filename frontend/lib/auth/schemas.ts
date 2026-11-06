@@ -27,6 +27,13 @@ export const AUTH_FORM_CONFIG: Record<
   },
   [AuthFormId.ForgotPassword]: { schema: z.object({ email }), path: API_PATHS.forgotPassword },
   [AuthFormId.ResetPassword]: { schema: z.object({ password }), path: API_PATHS.resetPassword },
+  [AuthFormId.ChangePassword]: {
+    schema: z.object({
+      currentPassword: z.string().min(1, VALIDATION.required),
+      newPassword: password,
+    }),
+    path: API_PATHS.changePassword,
+  },
   [AuthFormId.ResendVerification]: {
     schema: z.object({ email }),
     path: API_PATHS.resendVerification,
