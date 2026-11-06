@@ -248,6 +248,27 @@
         "title": "AdminUserResponse",
         "type": "object"
       },
+      "ChangePasswordRequest": {
+        "properties": {
+          "currentPassword": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Currentpassword",
+            "type": "string"
+          },
+          "newPassword": {
+            "minLength": 8,
+            "title": "Newpassword",
+            "type": "string"
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
+        "title": "ChangePasswordRequest",
+        "type": "object"
+      },
       "ClockAdvanceRequest": {
         "properties": {
           "hours": {
@@ -1411,6 +1432,40 @@
           }
         },
         "summary": "Update Address",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/password": {
+      "post": {
+        "operationId": "change_password_api_v1_me_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Password",
         "tags": [
           "me"
         ]
