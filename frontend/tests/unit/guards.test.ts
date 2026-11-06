@@ -8,7 +8,7 @@ describe("findGuard", () => {
     expect(findGuard(path)).toBeDefined();
   });
 
-  it.each(["/", "/search", "/login", "/accounting", "/administrator"])("leaves %s open", (path) => {
+  it.each(["/", "/books", "/login", "/accounting", "/administrator"])("leaves %s open", (path) => {
     expect(findGuard(path)).toBeUndefined();
   });
 
