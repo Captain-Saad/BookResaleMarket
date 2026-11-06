@@ -1,13 +1,25 @@
 import type { Metadata } from "next";
-import PlaceholderPage from "@/components/layout/placeholder-page";
-import { BACK_HOME_LINK, PLACEHOLDER_PAGES } from "@/lib/constants";
+import AuthForm from "@/components/domain/auth-form";
+import { safeNextPath } from "@/lib/auth/guards";
+import { AUTH_ERROR_MESSAGES, AUTH_FORMS, ROUTES } from "@/lib/constants";
+import { AuthFormId, type LoginPageProps } from "@/lib/types";
 
-const { title, description } = PLACEHOLDER_PAGES.login;
+const copy = AUTH_FORMS[AuthFormId.Login];
 
-export const metadata: Metadata = { title };
+export const metadata: Metadata = { title: copy.title };
 
-const LoginPage = () => (
-  <PlaceholderPage title={title} description={description} homeLink={BACK_HOME_LINK} />
-);
+const LoginPage = async ({ searchParams }: LoginPageProps) => {
+  const { next } = await searchParams;
+
+  return (
+    <AuthForm
+      formId={AuthFormId.Login}
+      copy={copy}
+      errorMessages={AUTH_ERROR_MESSAGES}
+      successHref={safeNextPath(next)}
+      suspendedHref={ROUTES.suspended}
+    />
+  );
+};
 
 export default LoginPage;
