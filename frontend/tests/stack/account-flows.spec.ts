@@ -206,3 +206,45 @@ test("the real API sends security headers and hides its server", async ({ reques
   expect(headers["cache-control"]).toBe("no-store");
   expect(headers.server).toBeUndefined();
 });
+
+test("a signed-in user changes their password and other devices are signed out", async ({
+  page,
+  browser,
+}) => {
+  const email = uniqueEmail("change");
+  await register(page, email);
+  await signIn(page, email);
+  await expect(page).toHaveURL("/account");
+
+  const otherDevice = await browser.newContext();
+  const otherPage = await otherDevice.newPage();
+  const baseURL = test.info().project.use.baseURL;
+  await otherPage.goto(`${baseURL}/login`);
+  await otherPage.getByLabel("Email").fill(email);
+  await otherPage.getByLabel("Password").fill(PASSWORD);
+  await otherPage.getByRole("button", { name: "Sign in" }).click();
+  await expect(otherPage).toHaveURL(`${baseURL}/account`);
+
+  await page.getByRole("link", { name: "Change password" }).click();
+  await expect(page).toHaveURL("/reset-password");
+  await page.getByLabel("Current password").fill("wrong-password");
+  await page.getByLabel("New password").fill("a-new-password");
+  await page.getByRole("button", { name: "Change password" }).click();
+  await expect(page.locator("main").getByRole("alert")).toContainText("current password");
+
+  await page.getByLabel("Current password").fill(PASSWORD);
+  await page.getByRole("button", { name: "Change password" }).click();
+  await expect(page.getByRole("status")).toContainText("password has been changed");
+
+  await page.goto("/account");
+  await expect(page).toHaveURL("/account");
+  await otherPage.goto(`${baseURL}/account`);
+  await expect(otherPage).toHaveURL(/\/login/);
+  await otherDevice.close();
+
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await signIn(page, email);
+  await expect(page.locator("main").getByRole("alert")).toContainText("don't match");
+  await signIn(page, email, "a-new-password");
+  await expect(page).toHaveURL("/account");
+});

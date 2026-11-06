@@ -31,6 +31,7 @@ export const ROUTES = {
   login: "/login",
   register: "/register",
   forgotPassword: "/forgot-password",
+  resetPassword: "/reset-password",
   verifyEmail: "/verify-email",
   suspended: "/suspended",
   account: "/account",
@@ -207,6 +208,8 @@ export const SESSION_COOKIE = "bookloop_session";
 
 export const NEXT_PARAM = "next";
 
+export const TOKEN_PARAM = "token";
+
 export const GUARD_TIMEOUT_MS = 3000;
 
 export const ROUTE_GUARDS = [
@@ -224,6 +227,7 @@ export const API_PATHS = {
   register: "/api/v1/auth/register",
   forgotPassword: "/api/v1/auth/forgot-password",
   resetPassword: "/api/v1/auth/reset-password",
+  changePassword: "/api/v1/me/password",
   verifyEmail: "/api/v1/auth/verify-email",
   resendVerification: "/api/v1/auth/resend-verification",
   me: "/api/v1/me",
@@ -260,6 +264,8 @@ export const VALIDATION = {
 export const AUTH_ERROR_MESSAGES = {
   default: "Something went wrong. Please try again.",
   invalid_credentials: "That email and password don't match.",
+  invalid_current_password: "That isn't your current password.",
+  not_authenticated: "Your session has ended. Please sign in again.",
   invalid_token: "This link has expired or was already used. Please request a new one.",
   rate_limited: "Too many attempts. Please wait a moment and try again.",
   account_suspended: "This account has been suspended.",
@@ -322,6 +328,25 @@ export const AUTH_FORMS = {
     successMessage: "Your password has been changed. You can sign in now.",
     links: [{ href: ROUTES.login, label: "Back to sign in" }],
   },
+  [AuthFormId.ChangePassword]: {
+    title: "Change your password",
+    description: "Enter your current password, then choose a new one.",
+    submitLabel: "Change password",
+    fields: [
+      {
+        name: "currentPassword",
+        label: "Current password",
+        type: "password",
+        autoComplete: "current-password",
+      },
+      { ...NEW_PASSWORD_FIELD, name: "newPassword", label: "New password" },
+    ],
+    successMessage: "Your password has been changed. Your other devices have been signed out.",
+    links: [
+      { href: ROUTES.forgotPassword, label: "Forgot your current password?" },
+      { href: ROUTES.home, label: "Back to home" },
+    ],
+  },
   [AuthFormId.ResendVerification]: {
     title: "Verify your email",
     description: "Enter your email and we'll send a new verification link.",
@@ -338,12 +363,6 @@ export const VERIFY_EMAIL_COPY = {
   [VerifyEmailStatus.Verified]: "Your email is verified. You're all set.",
   [VerifyEmailStatus.Invalid]: "This link has expired or was already used.",
   loginLink: { href: ROUTES.login, label: "Continue to sign in" },
-} as const;
-
-export const RESET_LINK_INVALID = {
-  title: "Reset link missing",
-  description: "This page needs the link from your email. You can request a new one.",
-  link: { href: ROUTES.forgotPassword, label: "Request a new link" },
 } as const;
 
 export const ACCOUNT_NAV = {
@@ -379,6 +398,7 @@ export const PROFILE_FORM_COPY = {
     { name: "phone", label: "Phone (optional)", type: "tel", autoComplete: "tel" },
   ],
   submitLabel: "Save changes",
+  passwordLink: { href: ROUTES.resetPassword, label: "Change password" },
 } as const;
 
 export const EMPTY_ADDRESS = {

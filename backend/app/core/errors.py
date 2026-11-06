@@ -64,6 +64,11 @@ class InvalidTokenError(AppError):
     code = "invalid_token"
 
 
+class InvalidCurrentPasswordError(AppError):
+    status = HTTPStatus.BAD_REQUEST
+    code = "invalid_current_password"
+
+
 class RateLimitedError(AppError):
     status = HTTPStatus.TOO_MANY_REQUESTS
     code = "rate_limited"

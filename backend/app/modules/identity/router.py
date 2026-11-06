@@ -23,6 +23,7 @@ from app.modules.identity.schemas import (
     AccountUpdateRequest,
     AddressRequest,
     AddressResponse,
+    ChangePasswordRequest,
     EmailRequest,
     LoginRequest,
     RegisterRequest,
@@ -162,6 +163,26 @@ async def get_me(auth: CurrentAuth, db: DbDep) -> AccountResponse:
 @me_router.patch("")
 async def update_me(body: AccountUpdateRequest, auth: CurrentAuth, db: DbDep) -> AccountResponse:
     return await service.update_account(db, auth.user, body)
+
+
+@me_router.post("/password", status_code=HTTPStatus.NO_CONTENT)
+async def change_password(
+    request: Request,
+    body: ChangePasswordRequest,
+    auth: CurrentAuth,
+    db: DbDep,
+    settings: SettingsDep,
+    clock: ClockDep,
+) -> None:
+    await enforce(request, "change-password", str(auth.user.id), LOGIN_LIMIT, LIMIT_WINDOW_SECONDS)
+    await service.change_password(
+        db,
+        settings,
+        clock,
+        auth,
+        current_password=body.current_password,
+        new_password=body.new_password,
+    )
 
 
 @me_router.get("/addresses")

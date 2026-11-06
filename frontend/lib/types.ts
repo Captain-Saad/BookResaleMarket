@@ -21,6 +21,7 @@ export enum AuthFormId {
   ForgotPassword = "forgot-password",
   ResetPassword = "reset-password",
   ResendVerification = "resend-verification",
+  ChangePassword = "change-password",
 }
 
 export enum VerifyEmailStatus {
@@ -273,6 +274,7 @@ export type ProfileFormCopy = AccountCopy & {
   emailUnverified: string;
   fields: readonly FormFieldConfig[];
   submitLabel: string;
+  passwordLink: NavLink;
 };
 
 export type ProfileFormProps = { copy: ProfileFormCopy };
