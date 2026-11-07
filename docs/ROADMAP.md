@@ -55,11 +55,11 @@ Approximately **82 PRs** in total (down from 140). S0-00 and S0-01 are already d
 **→ S2 GATE.**
 
 ## S3 — Search and listing detail (F3 + M3)
-- **S3-01** FE BookCard, condition/fulfillment badges, search page, filters (rail and mobile sheet), skeletons (mock).
+- **S3-01** FE BookCard, condition/fulfillment badges, the `/books` page listing every book with search and filters built in (rail and mobile sheet), skeletons (mock).
 - **S3-02** FE Listing detail: gallery, purchase card, sticky mobile bar (mock).
 - **S3-03** BE FTS + trigram indexes, seed script (≥ 500 listings), search endpoint with filters and cursor pagination.
 - **S3-04** BE Detail endpoint, privacy rules (city/region only), availability freshness, performance test.
-- **S3-05** WIRE Search, filters, URL state.
+- **S3-05** WIRE `/books` search, filters, URL state (`/books?q=…&condition=…`).
 - **S3-06** WIRE Detail, SEO metadata, JSON-LD.
 
 **→ S3 GATE.**
