@@ -94,14 +94,16 @@ def test_resend_replaces_the_old_verification_link(api: TestClient) -> None:
     assert api.post("/api/v1/auth/verify-email", json={"token": new}).status_code == 204
 
 
-def test_resend_says_nothing_about_unknown_or_verified_emails(api: TestClient) -> None:
+def test_resend_distinguishes_unknown_and_verified_emails(api: TestClient) -> None:
     register(api)
     token = token_from(outbox(api)[-1])
     api.post("/api/v1/auth/verify-email", json={"token": token})
     before = len(outbox(api))
     verified = api.post("/api/v1/auth/resend-verification", json={"email": EMAIL})
     unknown = api.post("/api/v1/auth/resend-verification", json={"email": "no@example.com"})
-    assert verified.status_code == unknown.status_code == 202
+    assert verified.status_code == 200
+    assert unknown.status_code == 404
+    assert unknown.json()["code"] == "account_not_found"
     assert len(outbox(api)) == before
 
 
@@ -262,4 +264,12 @@ def test_limiter_allows_requests_when_redis_is_down() -> None:
 
 def test_a_mail_outage_does_not_raise() -> None:
     notifier = SmtpNotifier("localhost", 1, "from@example.com")
-    asyncio.run(notifier.send(EmailMessage(to="a@b.c", subject="s", body="b")))
+    assert asyncio.run(notifier.send(EmailMessage(to="a@b.c", subject="s", body="b"))) is False
+
+
+def test_resend_reports_delivery_failure(api: TestClient) -> None:
+    register(api)
+    api.app.state.notifier = SmtpNotifier("localhost", 1, "from@example.com")  # type: ignore[attr-defined]
+    response = api.post("/api/v1/auth/resend-verification", json={"email": EMAIL})
+    assert response.status_code == 503
+    assert response.json()["code"] == "email_delivery_failed"

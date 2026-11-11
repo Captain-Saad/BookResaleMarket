@@ -28,8 +28,10 @@ class SmtpNotifier:
         with smtplib.SMTP(self.host, self.port, timeout=SMTP_TIMEOUT_SECONDS) as client:
             client.send_message(mime)
 
-    async def send(self, message: EmailMessage) -> None:
+    async def send(self, message: EmailMessage) -> bool:
         try:
             await asyncio.to_thread(self._send_blocking, message)
-        except OSError as exc:
+        except (OSError, smtplib.SMTPException) as exc:
             logger.warning("email not sent", error=type(exc).__name__)
+            return False
+        return True

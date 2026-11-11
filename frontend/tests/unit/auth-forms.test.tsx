@@ -209,3 +209,27 @@ describe("VerifyEmailStatus", () => {
     expect(await screen.findByText(VERIFY_EMAIL_COPY[Status.Invalid])).toBeInTheDocument();
   });
 });
+
+it.each([
+  [200, null, "Your profile is already verified."],
+  [202, null, "Verification email has been sent."],
+  [404, "account_not_found", "No account exists with this email. Please register first."],
+  [503, "email_delivery_failed", "We couldn’t send the verification email. Please try again."],
+])("shows the resend outcome for HTTP %s", async (status, code, message) => {
+  server.use(
+    http.post(`${API_BASE_URL}${API_PATHS.resendVerification}`, () =>
+      HttpResponse.json(code ? { code } : null, { status }),
+    ),
+  );
+  render(
+    <AuthForm
+      formId={AuthFormId.ResendVerification}
+      copy={AUTH_FORMS[AuthFormId.ResendVerification]}
+      errorMessages={AUTH_ERROR_MESSAGES}
+    />,
+  );
+  const user = userEvent.setup();
+  await user.type(screen.getByLabelText("Email"), "reader@example.com");
+  await user.click(screen.getByRole("button", { name: "Send verification link" }));
+  expect(await screen.findByRole(code ? "alert" : "status")).toHaveTextContent(message);
+});

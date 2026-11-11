@@ -234,6 +234,8 @@ export const AUTH_ERROR_MESSAGES = {
   invalid_token: "This link has expired or was already used. Please request a new one.",
   rate_limited: "Too many attempts. Please wait a moment and try again.",
   account_suspended: "This account has been suspended.",
+  account_not_found: "No account exists with this email. Please register first.",
+  email_delivery_failed: "We couldn’t send the verification email. Please try again.",
 } as const;
 
 const EMAIL_FIELD = {
@@ -317,7 +319,7 @@ export const AUTH_FORMS = {
     description: "Enter your email and we'll send a new verification link.",
     submitLabel: "Send verification link",
     fields: [EMAIL_FIELD],
-    successMessage: "If that email needs verifying, a new link is on its way.",
+    successMessage: "Verification email has been sent.",
     links: [{ href: ROUTES.login, label: "Back to sign in" }],
   },
 } as const;
@@ -427,3 +429,5 @@ export const SELLER_PANEL_COPY = {
     },
   },
 } as const;
+
+export const EMAIL_ALREADY_VERIFIED_MESSAGE = "Your profile is already verified.";

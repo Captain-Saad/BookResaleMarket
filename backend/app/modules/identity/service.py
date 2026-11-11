@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import Clock
 from app.core.config import Settings
-from app.core.errors import InvalidTokenError, UnauthorizedError
+from app.core.errors import InvalidTokenError, NotFoundError, UnauthorizedError
 from app.core.security import (
     dummy_password_hash,
     hash_password,
@@ -100,7 +100,9 @@ async def resend_verification(
     db: AsyncSession, settings: Settings, clock: Clock, email: str
 ) -> EmailMessage | None:
     user = await repository.get_user_by_email(db, email)
-    if user is None or user.email_verified_at is not None:
+    if user is None:
+        raise NotFoundError(code="account_not_found")
+    if user.email_verified_at is not None:
         return None
     token = await _issue_token(
         db,

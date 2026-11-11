@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { apiFetch } from "@/lib/api/client";
 import { AUTH_FORM_CONFIG, problemSchema } from "@/lib/auth/schemas";
-import { type AuthFormValues, ProblemCode, type UseAuthFormOptions } from "@/lib/types";
+import { EMAIL_ALREADY_VERIFIED_MESSAGE } from "@/lib/constants";
+import { AuthFormId, type AuthFormValues, ProblemCode, type UseAuthFormOptions } from "@/lib/types";
 
 const useAuthForm = ({
   formId,
@@ -15,6 +16,7 @@ const useAuthForm = ({
 }: UseAuthFormOptions) => {
   const router = useRouter();
   const [isComplete, setIsComplete] = useState(false);
+  const [completionMessage, setCompletionMessage] = useState<string>();
   const { schema, path } = AUTH_FORM_CONFIG[formId];
   const form = useForm<AuthFormValues>({ resolver: zodResolver(schema) });
 
@@ -23,6 +25,9 @@ const useAuthForm = ({
       const body = JSON.stringify(token ? { ...values, token } : values);
       const result = await apiFetch(path, { method: "POST", body });
       if (result.ok) {
+        if (formId === AuthFormId.ResendVerification && result.status === 200) {
+          setCompletionMessage(EMAIL_ALREADY_VERIFIED_MESSAGE);
+        }
         if (successHref) router.push(successHref);
         else setIsComplete(true);
         return;
@@ -40,7 +45,7 @@ const useAuthForm = ({
     }
   });
 
-  return { form, onSubmit, isComplete };
+  return { form, onSubmit, isComplete, completionMessage };
 };
 
 export default useAuthForm;
