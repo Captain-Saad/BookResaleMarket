@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   frontend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
     steps:
@@ -29,8 +29,19 @@ jobs:
       - name: Storybook build
         run: pnpm build-storybook
         working-directory: frontend
-      - run: pnpm exec playwright install --with-deps chromium
+      - name: Install Chromium and system dependencies
+        timeout-minutes: 12
         working-directory: frontend
+        run: |
+          for attempt in 1 2 3; do
+            if timeout 180s pnpm exec playwright install --with-deps chromium; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            sleep 10
+          done
       - name: E2E and accessibility
         run: pnpm test:e2e
         working-directory: frontend
