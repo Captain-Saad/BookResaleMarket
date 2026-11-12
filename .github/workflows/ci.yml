@@ -29,12 +29,12 @@ jobs:
       - name: Storybook build
         run: pnpm build-storybook
         working-directory: frontend
-      - name: Install Chromium and system dependencies
+      - name: Install Chromium
         timeout-minutes: 12
         working-directory: frontend
         run: |
           for attempt in 1 2 3; do
-            if timeout 180s pnpm exec playwright install --with-deps chromium; then
+            if timeout --kill-after=10s 180s pnpm exec playwright install chromium; then
               exit 0
             fi
             if [ "$attempt" -eq 3 ]; then
