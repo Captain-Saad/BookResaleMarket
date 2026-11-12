@@ -15,6 +15,7 @@ from testcontainers.community.postgres import PostgresContainer
 from alembic import command
 from app.core.config import Settings, get_settings
 from app.core.db import to_async_url
+from app.integrations.email.fake import FakeNotifier
 from app.main import create_app
 
 ALEMBIC_INI = Path(__file__).resolve().parent.parent / "alembic.ini"
@@ -85,5 +86,22 @@ def api(database_url: str) -> Iterator[TestClient]:
         database_direct_url=database_url,
         bcrypt_rounds=4,
     )
-    with TestClient(create_app(settings)) as test_client:
+    app = create_app(settings)
+    app.state.notifier = FakeNotifier()
+    with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def scalar(database_url: str) -> Callable[[str], object]:
+    def run_query(sql: str) -> object:
+        async def run() -> object:
+            engine = create_async_engine(to_async_url(database_url), poolclass=NullPool)
+            async with engine.connect() as connection:
+                value = await connection.scalar(text(sql))
+            await engine.dispose()
+            return value
+
+        return asyncio.run(run())
+
+    return run_query
