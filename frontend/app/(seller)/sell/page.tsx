@@ -1,13 +1,6 @@
 import type { Metadata } from "next";
-import PlaceholderPage from "@/components/layout/placeholder-page";
-import { BACK_HOME_LINK, PLACEHOLDER_PAGES } from "@/lib/constants";
-
-const { title, description } = PLACEHOLDER_PAGES.sell;
-
-export const metadata: Metadata = { title };
-
-const SellPage = () => (
-  <PlaceholderPage title={title} description={description} homeLink={BACK_HOME_LINK} />
-);
-
+import ListingWizard from "@/components/domain/listing-wizard";
+import { LISTING_COPY } from "@/lib/constants";
+export const metadata: Metadata = { title: LISTING_COPY.title };
+const SellPage = () => <ListingWizard copy={LISTING_COPY} />;
 export default SellPage;

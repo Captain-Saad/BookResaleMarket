@@ -49,7 +49,7 @@ const PLACEHOLDER_ROUTES = [
   { path: "/books", heading: "Books" },
   { path: "/login", heading: "Sign in" },
   { path: "/orders", heading: "Your orders" },
-  { path: "/sell", heading: "Sell a book" },
+  { path: "/sell", heading: "Give your next chapter a new home" },
   { path: "/warehouse", heading: "Warehouse console" },
   { path: "/courier", heading: "Courier app" },
   { path: "/admin", heading: "Admin console" },

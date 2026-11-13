@@ -307,3 +307,18 @@ export type SellerPanelCopy = AccountCopy & {
 };
 
 export type SellerPanelProps = { copy: SellerPanelCopy };
+
+export type ListingDraft = components["schemas"]["ListingDraftRequest"];
+export type SellerListing = components["schemas"]["ListingResponse"];
+export type SellerListingPage = components["schemas"]["ListingPage"];
+export type IsbnMetadata = components["schemas"]["BookMetadata"];
+export enum ListingStep {
+  Book = "book",
+  Condition = "condition",
+  Photos = "photos",
+  Fulfillment = "fulfillment",
+  Price = "price",
+  Review = "review",
+}
+export type ListingCopy = typeof import("./constants").LISTING_COPY;
+export type ListingWizardProps = { copy: ListingCopy; initial?: SellerListing };

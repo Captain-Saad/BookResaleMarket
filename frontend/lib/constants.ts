@@ -472,3 +472,54 @@ export const SELLER_PANEL_COPY = {
 } as const;
 
 export const EMAIL_ALREADY_VERIFIED_MESSAGE = "Your profile is already verified.";
+
+export const LISTING_COPY = {
+  title: "Give your next chapter a new home",
+  description: "List one physical copy. Start with the book, then describe its condition.",
+  steps: ["Book", "Condition"],
+  isbn: "ISBN (optional)",
+  lookup: "Find book",
+  manual: "No ISBN? Enter the book details below.",
+  titleLabel: "Book title",
+  author: "Author",
+  condition: "Condition",
+  notes: "Condition notes",
+  next: "Continue",
+  back: "Back",
+  save: "Save draft",
+  saved: "Draft saved.",
+  saving: "Saving…",
+  missing: "Enter the book title and author before continuing.",
+  lookupMissing: "We couldn't find this ISBN. You can enter the details yourself.",
+  lookupFailed: "Book lookup is unavailable. Enter the details yourself or try again.",
+  invalidIsbn: "Enter a valid ISBN-10 or ISBN-13.",
+  failed: "We couldn't save your changes. Please try again.",
+  signIn: "Please sign in to manage your listings.",
+  forbidden: "Become a seller in your account before creating a listing.",
+  suspended: "This account is suspended.",
+  loading: "Loading your listing…",
+  retry: "Try again",
+  conditions: [
+    { value: "new", label: "New" },
+    { value: "like_new", label: "Like new" },
+    { value: "very_good", label: "Very good" },
+    { value: "good", label: "Good" },
+    { value: "acceptable", label: "Acceptable" },
+  ],
+} as const;
+export const LISTING_API = {
+  isbn: "/api/v1/isbn",
+  listings: "/api/v1/listings",
+  mine: "/api/v1/me/listings",
+} as const;
+export const EMPTY_LISTING_DRAFT = {
+  isbn: null,
+  title: "",
+  author: "",
+  condition: "good",
+  notes: "",
+  fulfillment: "on_demand",
+  priceMinor: null,
+  currency: "USD",
+  addressId: null,
+} satisfies import("./types").ListingDraft;
