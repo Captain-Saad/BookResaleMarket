@@ -9,9 +9,6 @@ const withRequestId = (init: ResponseInit = {}): ResponseInit => ({
   headers: { "X-Request-ID": crypto.randomUUID(), ...init.headers },
 });
 
-const problem = (status: number, code: string) =>
-  HttpResponse.json({ status, code }, withRequestId({ status }));
-
 const url = (path: string) => `${API_BASE_URL}${path}`;
 
 const NEW_ACCOUNT = {
@@ -31,49 +28,6 @@ export const resetMockAccount = () => {
   account = { ...NEW_ACCOUNT };
   addresses = [];
 };
-
-const authHandlers = [
-  http.post<never, { email: string; password: string }>(
-    url(API_PATHS.login),
-    async ({ request }) => {
-      const { email, password } = await request.json();
-      if (email === "suspended@example.com") return problem(403, "account_suspended");
-      if (password === "wrong-password") return problem(401, "invalid_credentials");
-      return HttpResponse.json(account, withRequestId());
-    },
-  ),
-  http.post<never, { email: string }>(url(API_PATHS.register), async ({ request }) => {
-    const { email } = await request.json();
-    if (email === "taken@example.com") return problem(409, "email_taken");
-    return new HttpResponse(null, withRequestId({ status: 202 }));
-  }),
-  http.post(
-    url(API_PATHS.forgotPassword),
-    () => new HttpResponse(null, withRequestId({ status: 202 })),
-  ),
-  http.post(
-    url(API_PATHS.resendVerification),
-    () => new HttpResponse(null, withRequestId({ status: 202 })),
-  ),
-  http.post<never, { token: string }>(url(API_PATHS.resetPassword), async ({ request }) => {
-    const { token } = await request.json();
-    if (token !== "valid-token") return problem(400, "invalid_token");
-    return new HttpResponse(null, withRequestId({ status: 204 }));
-  }),
-  http.post<never, { currentPassword: string }>(
-    url(API_PATHS.changePassword),
-    async ({ request }) => {
-      const { currentPassword } = await request.json();
-      if (currentPassword === "wrong-password") return problem(400, "invalid_current_password");
-      return new HttpResponse(null, withRequestId({ status: 204 }));
-    },
-  ),
-  http.post<never, { token: string }>(url(API_PATHS.verifyEmail), async ({ request }) => {
-    const { token } = await request.json();
-    if (token !== "valid-token") return problem(400, "invalid_token");
-    return new HttpResponse(null, withRequestId({ status: 204 }));
-  }),
-];
 
 const accountHandlers = [
   http.get(url(API_PATHS.me), () => HttpResponse.json(account, withRequestId())),
@@ -117,7 +71,6 @@ const accountHandlers = [
 ];
 
 export const handlers = [
-  ...authHandlers,
   ...accountHandlers,
 
   http.get(`${API_BASE_URL}/healthz`, () =>

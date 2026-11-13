@@ -23,8 +23,10 @@ const useAuthForm = ({
       const body = JSON.stringify(token ? { ...values, token } : values);
       const result = await apiFetch(path, { method: "POST", body });
       if (result.ok) {
-        if (successHref) router.push(successHref);
-        else setIsComplete(true);
+        if (successHref) {
+          router.push(successHref);
+          router.refresh();
+        } else setIsComplete(true);
         return;
       }
       const code = problemSchema.safeParse(result.body).data?.code;

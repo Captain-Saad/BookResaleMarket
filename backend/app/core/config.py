@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     readiness_timeout_seconds: float = 5.0
     cors_origins: list[str] = ["http://localhost:3000"]
     bcrypt_rounds: int = 12
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    email_from: str = "BookLoop <no-reply@bookloop.test>"
+    frontend_base_url: str = "http://localhost:3000"
+    email_verification_hours: int = 24
+    password_reset_minutes: int = 60
     session_idle_minutes: int = 60 * 24 * 7
     session_absolute_days: int = 30
 

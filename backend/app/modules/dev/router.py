@@ -1,5 +1,5 @@
 """Dev-only routes for the Test Console (CLAUDE.md §6). Mounted only when BOOKLOOP_ENV is not
-production; the admin-role check is added with authentication in S1."""
+production, and only admins can call them."""
 
 from datetime import datetime, timedelta
 from typing import Literal
@@ -8,7 +8,12 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 
 from app.core.clock import OffsetClock
+from app.core.deps import DbDep
 from app.core.errors import NotFoundError
+from app.modules.identity import service
+from app.modules.identity.deps import require_roles
+from app.modules.identity.models import Role, SellerVerificationStatus
+from app.modules.identity.schemas import Email
 
 DevRole = Literal["buyer", "seller", "warehouse", "courier", "dispatcher", "admin"]
 
@@ -19,7 +24,9 @@ def require_dev_environment(request: Request) -> None:
 
 
 router = APIRouter(
-    prefix="/api/v1/dev", tags=["dev"], dependencies=[Depends(require_dev_environment)]
+    prefix="/api/v1/dev",
+    tags=["dev"],
+    dependencies=[Depends(require_dev_environment), Depends(require_roles(Role.ADMIN))],
 )
 
 
@@ -29,6 +36,11 @@ class SessionRequest(BaseModel):
 
 class SessionResponse(BaseModel):
     role: DevRole
+
+
+class SellerVerificationResultRequest(BaseModel):
+    email: Email
+    status: SellerVerificationStatus
 
 
 class SeedResponse(BaseModel):
@@ -71,3 +83,11 @@ async def advance_clock(body: ClockAdvanceRequest, request: Request) -> ClockRes
     clock: OffsetClock = request.app.state.clock
     clock.advance(timedelta(hours=body.hours))
     return ClockResponse(now=clock.now(), advanced_hours=body.hours)
+
+
+@router.post("/seller-verification", summary="Record a seller verification result")
+async def record_seller_verification(
+    body: SellerVerificationResultRequest, db: DbDep
+) -> SellerVerificationResultRequest:
+    await service.record_seller_verification(db, email=body.email, status=body.status)
+    return body

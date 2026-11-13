@@ -53,7 +53,12 @@ export enum SaveStatus {
 }
 
 export enum UserRole {
+  Buyer = "buyer",
   Seller = "seller",
+  Warehouse = "warehouse",
+  Courier = "courier",
+  Dispatcher = "dispatcher",
+  Admin = "admin",
 }
 
 export enum ProblemCode {
@@ -217,6 +222,8 @@ export type AuthFormProps = {
 
 export type UseAuthFormOptions = Omit<AuthFormProps, "copy">;
 
+export type LoginPageProps = { searchParams: Promise<{ next?: string | string[] }> };
+
 export type TokenPageProps = { searchParams: Promise<{ token?: string | string[] }> };
 
 export type VerifyEmailCopy = Readonly<Record<VerifyEmailStatus, string>> & {
@@ -226,7 +233,16 @@ export type VerifyEmailCopy = Readonly<Record<VerifyEmailStatus, string>> & {
 
 export type VerifyEmailStatusProps = { token: string; copy: VerifyEmailCopy };
 
-export type AccountNavProps = { label: string; links: readonly NavLink[] };
+export type RoleNavLink = NavLink & { role: UserRole };
+
+export type RouteGuard = { prefix: string; role?: UserRole };
+
+export type AccountNavProps = {
+  label: string;
+  links: readonly NavLink[];
+  roleLinks: readonly RoleNavLink[];
+  signOutLabel: string;
+};
 
 export type AccountCopy = {
   loading: string;
