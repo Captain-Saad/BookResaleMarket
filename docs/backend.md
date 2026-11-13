@@ -218,7 +218,7 @@ Every module also: factories, OpenAPI docs with examples, migrations that are re
 #### M1 — Identity, roles, profiles, seller verification (FR-33, 34, 35; NFR-2 partly)
 - **DB:** `users, auth_sessions, email_tokens, profiles, user_roles, addresses, seller_verifications, audit_log`.
 - **Endpoints:** `POST /auth/register|login|logout|verify-email|resend-verification|forgot-password|reset-password`, `GET/PATCH /me`, `POST /me/roles/seller` (become seller), `CRUD /me/addresses`, `POST /me/seller-verification` (starts Stripe Connect onboarding/identity), `POST /admin/users/{id}/suspend|unsuspend`, `GET /admin/users`.
-- **Rules → tests:** one account can be buyer+seller; seller **cannot make a listing purchasable** until verified (FR-34); suspended user is rejected on the next request (FR-35); role escalation via API impossible; session negatives (missing, unknown, expired, revoked, tampered cookie); password and token rules; no email enumeration; route-auth enumeration test.
+- **Rules → tests:** one account can be buyer+seller; seller **cannot make a listing purchasable** until verified (FR-34); suspended user is rejected on the next request (FR-35); role escalation via API impossible; session negatives (missing, unknown, expired, revoked, tampered cookie); password and token rules; register and forgot-password do not reveal account existence; resend-verification explicitly reports unknown accounts (404), already verified accounts (200), SMTP-accepted verification emails (202), and delivery failures (503), per user request on 2026-11-11; route-auth enumeration test.
 - **Commits:** (1) models+migration+RLS, (2) password hashing + sessions + auth deps, (3) endpoints+tests.
 - **TEST GATE:** register (web or curl), open the verification email in the local test inbox, log in, call `/me`; become seller; start verification (test mode); admin suspends user → their next call returns 403 `account_suspended`; non-admin calling admin route → 403/404.
 
@@ -226,6 +226,7 @@ Every module also: factories, OpenAPI docs with examples, migrations that are re
 
 #### M2 — Books, listings, photos (FR-1, 2, 5, 6; FR-8 data rules)
 - **DB:** `books, listings, listing_photos, listing_status_history`.
+- **S2 contract:** drafts may be incomplete; publish validates completeness. Optimistic `version` is required for patches. Photo limits (approved 2026-11-13): six images, 5 MiB each, 20 megapixels; JPEG/PNG/WebP only, Pillow validates and re-encodes to remove metadata. Currency is USD or EUR and prices use integer minor units. Owner address references never expose street addresses.
 - **Endpoints:** `GET /isbn/{isbn}`, `POST /listings` (draft), `PATCH /listings/{id}`, `POST /listings/{id}/photos/upload-url` (signed URL), `POST /listings/{id}/publish`, `POST /listings/{id}/deactivate`, `GET /me/listings`.
 - **Rules → tests:** ISBN-10/13 checksum; fulfillment model required & **immutable once a buyer has committed** (FR-2); price/photos/notes editable until purchased (FR-5); **condition grade + ISBN immutable once purchasable** (FR-5; DB trigger + service); deactivate before purchase only (FR-6); warehouse deactivation after intake creates `return_or_donation_pending` stub; seller location exposed as city/region only; photo type/size limits.
 - **Commits:** (1) models+migration, (2) service rules+tests, (3) router+signed upload.

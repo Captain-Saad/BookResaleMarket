@@ -503,6 +503,17 @@ export interface components {
             roles: string[];
             status: components["schemas"]["UserStatus"];
         };
+        /** BookMetadata */
+        BookMetadata: {
+            /** Author */
+            author: string;
+            /** Found */
+            found: boolean;
+            /** Isbn */
+            isbn: string;
+            /** Title */
+            title: string;
+        };
         /** ChangePasswordRequest */
         ChangePasswordRequest: {
             /** Currentpassword */
@@ -525,6 +536,16 @@ export interface components {
              */
             now: string;
         };
+        /**
+         * Condition
+         * @enum {string}
+         */
+        Condition: "new" | "like_new" | "very_good" | "good" | "acceptable";
+        /**
+         * Currency
+         * @enum {string}
+         */
+        Currency: "USD" | "EUR";
         /** EmailRequest */
         EmailRequest: {
             /**
@@ -533,6 +554,11 @@ export interface components {
              */
             email: string;
         };
+        /**
+         * Fulfillment
+         * @enum {string}
+         */
+        Fulfillment: "warehouse" | "on_demand";
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -546,6 +572,154 @@ export interface components {
              */
             status: "ok";
         };
+        /** ListingDraftRequest */
+        ListingDraftRequest: {
+            /**
+             * Addressid
+             * @default null
+             */
+            addressId: string | null;
+            /**
+             * Author
+             * @default
+             */
+            author: string;
+            /** @default good */
+            condition: components["schemas"]["Condition"];
+            /** @default USD */
+            currency: components["schemas"]["Currency"];
+            /** @default on_demand */
+            fulfillment: components["schemas"]["Fulfillment"];
+            /**
+             * Isbn
+             * @default null
+             */
+            isbn: string | null;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /**
+             * Priceminor
+             * @default null
+             */
+            priceMinor: number | null;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
+        /** ListingPage */
+        ListingPage: {
+            /** Items */
+            items: components["schemas"]["ListingResponse"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /** ListingPatchRequest */
+        ListingPatchRequest: {
+            /**
+             * Addressid
+             * @default null
+             */
+            addressId: string | null;
+            /**
+             * Author
+             * @default null
+             */
+            author: string | null;
+            /** @default null */
+            condition: components["schemas"]["Condition"] | null;
+            /** @default null */
+            currency: components["schemas"]["Currency"] | null;
+            /** @default null */
+            fulfillment: components["schemas"]["Fulfillment"] | null;
+            /**
+             * Isbn
+             * @default null
+             */
+            isbn: string | null;
+            /**
+             * Notes
+             * @default null
+             */
+            notes: string | null;
+            /**
+             * Priceminor
+             * @default null
+             */
+            priceMinor: number | null;
+            /**
+             * Title
+             * @default null
+             */
+            title: string | null;
+            /** Version */
+            version: number;
+        };
+        /** ListingPhoto */
+        ListingPhoto: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Position */
+            position: number;
+            /** Url */
+            url: string;
+        };
+        /** ListingResponse */
+        ListingResponse: {
+            /** Addressid */
+            addressId: string | null;
+            /** Author */
+            author: string;
+            condition: components["schemas"]["Condition"];
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            currency: components["schemas"]["Currency"];
+            fulfillment: components["schemas"]["Fulfillment"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Identitylocked */
+            identityLocked: boolean;
+            /** Isbn */
+            isbn: string | null;
+            /** Notes */
+            notes: string;
+            /** Photos */
+            photos: components["schemas"]["ListingPhoto"][];
+            /** Priceminor */
+            priceMinor: number | null;
+            /** Purchaselocked */
+            purchaseLocked: boolean;
+            /** Returnordonationpending */
+            returnOrDonationPending: boolean;
+            status: components["schemas"]["ListingStatus"];
+            /** Title */
+            title: string;
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+            /** Version */
+            version: number;
+        };
+        /**
+         * ListingStatus
+         * @enum {string}
+         */
+        ListingStatus: "draft" | "incoming" | "active" | "reserved" | "sold" | "deactivated" | "suspended" | "intake_failed";
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -555,6 +729,33 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** PhotoCompleteRequest */
+        PhotoCompleteRequest: {
+            /**
+             * Photoid
+             * Format: uuid
+             */
+            photoId: string;
+        };
+        /** PhotoUploadRequest */
+        PhotoUploadRequest: {
+            /** Contenttype */
+            contentType: string;
+            /** Sizebytes */
+            sizeBytes: number;
+        };
+        /** PhotoUploadResponse */
+        PhotoUploadResponse: {
+            /** Expiresin */
+            expiresIn: number;
+            /**
+             * Photoid
+             * Format: uuid
+             */
+            photoId: string;
+            /** Uploadurl */
+            uploadUrl: string;
         };
         /** ProblemDetails */
         ProblemDetails: {

@@ -248,6 +248,36 @@
         "title": "AdminUserResponse",
         "type": "object"
       },
+      "BookMetadata": {
+        "properties": {
+          "author": {
+            "maxLength": 200,
+            "title": "Author",
+            "type": "string"
+          },
+          "found": {
+            "title": "Found",
+            "type": "boolean"
+          },
+          "isbn": {
+            "title": "Isbn",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "isbn",
+          "title",
+          "author",
+          "found"
+        ],
+        "title": "BookMetadata",
+        "type": "object"
+      },
       "ChangePasswordRequest": {
         "properties": {
           "currentPassword": {
@@ -303,6 +333,25 @@
         "title": "ClockResponse",
         "type": "object"
       },
+      "Condition": {
+        "enum": [
+          "new",
+          "like_new",
+          "very_good",
+          "good",
+          "acceptable"
+        ],
+        "title": "Condition",
+        "type": "string"
+      },
+      "Currency": {
+        "enum": [
+          "USD",
+          "EUR"
+        ],
+        "title": "Currency",
+        "type": "string"
+      },
       "EmailRequest": {
         "properties": {
           "email": {
@@ -316,6 +365,14 @@
         ],
         "title": "EmailRequest",
         "type": "object"
+      },
+      "Fulfillment": {
+        "enum": [
+          "warehouse",
+          "on_demand"
+        ],
+        "title": "Fulfillment",
+        "type": "string"
       },
       "HTTPValidationError": {
         "properties": {
@@ -344,6 +401,397 @@
         "title": "HealthResponse",
         "type": "object"
       },
+      "ListingDraftRequest": {
+        "properties": {
+          "addressId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Addressid"
+          },
+          "author": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Author",
+            "type": "string"
+          },
+          "condition": {
+            "$ref": "#/components/schemas/Condition",
+            "default": "good"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency",
+            "default": "USD"
+          },
+          "fulfillment": {
+            "$ref": "#/components/schemas/Fulfillment",
+            "default": "on_demand"
+          },
+          "isbn": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Isbn"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "priceMinor": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "maximum": 100000000,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Priceminor"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "title": "ListingDraftRequest",
+        "type": "object"
+      },
+      "ListingPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ListingResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "ListingPage",
+        "type": "object"
+      },
+      "ListingPatchRequest": {
+        "properties": {
+          "addressId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Addressid"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Author"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Condition"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Currency"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "fulfillment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fulfillment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "isbn": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Isbn"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Notes"
+          },
+          "priceMinor": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "maximum": 100000000,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Priceminor"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          },
+          "version": {
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "ListingPatchRequest",
+        "type": "object"
+      },
+      "ListingPhoto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "position"
+        ],
+        "title": "ListingPhoto",
+        "type": "object"
+      },
+      "ListingResponse": {
+        "properties": {
+          "addressId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Addressid"
+          },
+          "author": {
+            "title": "Author",
+            "type": "string"
+          },
+          "condition": {
+            "$ref": "#/components/schemas/Condition"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "fulfillment": {
+            "$ref": "#/components/schemas/Fulfillment"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "identityLocked": {
+            "title": "Identitylocked",
+            "type": "boolean"
+          },
+          "isbn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isbn"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "photos": {
+            "items": {
+              "$ref": "#/components/schemas/ListingPhoto"
+            },
+            "title": "Photos",
+            "type": "array"
+          },
+          "priceMinor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priceminor"
+          },
+          "purchaseLocked": {
+            "title": "Purchaselocked",
+            "type": "boolean"
+          },
+          "returnOrDonationPending": {
+            "title": "Returnordonationpending",
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ListingStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "isbn",
+          "title",
+          "author",
+          "condition",
+          "notes",
+          "fulfillment",
+          "priceMinor",
+          "currency",
+          "addressId",
+          "status",
+          "version",
+          "identityLocked",
+          "purchaseLocked",
+          "returnOrDonationPending",
+          "photos",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "ListingResponse",
+        "type": "object"
+      },
+      "ListingStatus": {
+        "enum": [
+          "draft",
+          "incoming",
+          "active",
+          "reserved",
+          "sold",
+          "deactivated",
+          "suspended",
+          "intake_failed"
+        ],
+        "title": "ListingStatus",
+        "type": "string"
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -363,6 +811,65 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "PhotoCompleteRequest": {
+        "properties": {
+          "photoId": {
+            "format": "uuid",
+            "title": "Photoid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "photoId"
+        ],
+        "title": "PhotoCompleteRequest",
+        "type": "object"
+      },
+      "PhotoUploadRequest": {
+        "properties": {
+          "contentType": {
+            "pattern": "^image/(jpeg|png|webp)$",
+            "title": "Contenttype",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "exclusiveMinimum": 0,
+            "maximum": 5242880,
+            "title": "Sizebytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "contentType",
+          "sizeBytes"
+        ],
+        "title": "PhotoUploadRequest",
+        "type": "object"
+      },
+      "PhotoUploadResponse": {
+        "properties": {
+          "expiresIn": {
+            "title": "Expiresin",
+            "type": "integer"
+          },
+          "photoId": {
+            "format": "uuid",
+            "title": "Photoid",
+            "type": "string"
+          },
+          "uploadUrl": {
+            "title": "Uploadurl",
+            "type": "string"
+          }
+        },
+        "required": [
+          "photoId",
+          "uploadUrl",
+          "expiresIn"
+        ],
+        "title": "PhotoUploadResponse",
         "type": "object"
       },
       "ProblemDetails": {

@@ -14,7 +14,7 @@ const AuthForm = ({
   successHref,
   suspendedHref,
 }: AuthFormProps) => {
-  const { form, onSubmit, isComplete, isReady } = useAuthForm({
+  const { form, onSubmit, isComplete, isReady, completionMessage } = useAuthForm({
     formId,
     errorMessages,
     token,
@@ -32,7 +32,7 @@ const AuthForm = ({
         </div>
         {isComplete ? (
           <p role="status" className="text-center text-ink-1">
-            {copy.successMessage}
+            {completionMessage ?? copy.successMessage}
           </p>
         ) : (
           <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-4">

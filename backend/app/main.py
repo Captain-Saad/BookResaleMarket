@@ -2,10 +2,13 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.openapi.utils import get_openapi
+from pydantic.json_schema import models_json_schema
 
 from app.core.clock import OffsetClock, SystemClock
 from app.core.config import Settings, get_settings
@@ -24,6 +27,7 @@ from app.modules.dev.router import router as dev_router
 from app.modules.health.router import router as health_router
 from app.modules.identity.admin_router import admin_router
 from app.modules.identity.router import auth_router, me_router
+from app.modules.listings.schemas import CONTRACT_MODELS
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -75,4 +79,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(admin_router)
     if not settings.is_production:
         app.include_router(dev_router)
+
+    def openapi() -> dict[str, Any]:
+        if app.openapi_schema is None:
+            schema = get_openapi(title=app.title, version=app.version, routes=app.routes)
+            _, contracts = models_json_schema(
+                [(model, "validation") for model in CONTRACT_MODELS],
+                by_alias=True,
+                ref_template="#/components/schemas/{model}",
+            )
+            schema.setdefault("components", {}).setdefault("schemas", {}).update(
+                contracts.get("$defs", {})
+            )
+            app.openapi_schema = schema
+        return app.openapi_schema
+
+    app.openapi = openapi  # type: ignore[method-assign]
     return app

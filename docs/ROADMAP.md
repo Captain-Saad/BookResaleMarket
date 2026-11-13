@@ -45,6 +45,7 @@ Approximately **82 PRs** in total (down from 140). S0-00 and S0-01 are already d
 **→ S1 GATE.**
 
 ## S2 — Listings (F2 + M2)
+- **S2-00** Contract/base: integrate existing S1 fixes; export listing schemas before mocked frontend work. User authorized all S2 branches and draft PRs on 2026-11-13; stop at S2 gate.
 - **S2-01** FE Wizard shell, stepper, draft state, ISBN step, condition/notes step (mock).
 - **S2-02** FE Photo upload step, fulfillment comparison, price, review, My Listings with status chips and locked-field states (mock).
 - **S2-03** BE `books`, `listings`, photos, status history tables + ISBN lookup provider (SSRF-safe) + endpoint.

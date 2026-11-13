@@ -15,6 +15,7 @@ from app.core.deps import (
     SettingsDep,
     public,
 )
+from app.core.errors import ServiceUnavailableError
 from app.core.rate_limit import enforce, rate_limit_by_ip
 from app.modules.identity import service
 from app.modules.identity.deps import CurrentAuth
@@ -91,15 +92,18 @@ async def verify_email(body: TokenRequest, db: DbDep, clock: ClockDep) -> None:
 )
 async def resend_verification(
     body: EmailRequest,
-    background: BackgroundTasks,
+    response: Response,
     db: DbDep,
     settings: SettingsDep,
     clock: ClockDep,
     notifier: NotifierDep,
 ) -> None:
     message = await service.resend_verification(db, settings, clock, body.email)
-    if message:
-        background.add_task(notifier.send, message)
+    if message is None:
+        response.status_code = HTTPStatus.OK
+        return
+    if not await notifier.send(message):
+        raise ServiceUnavailableError(code="email_delivery_failed")
 
 
 @auth_router.post(

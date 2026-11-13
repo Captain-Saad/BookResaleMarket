@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   frontend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       NEXT_PUBLIC_COMMIT_SHA: ${{ github.sha }}
     steps:
@@ -29,8 +29,19 @@ jobs:
       - name: Storybook build
         run: pnpm build-storybook
         working-directory: frontend
-      - run: pnpm exec playwright install --with-deps chromium
+      - name: Install Chromium
+        timeout-minutes: 12
         working-directory: frontend
+        run: |
+          for attempt in 1 2 3; do
+            if timeout --kill-after=10s 180s pnpm exec playwright install chromium; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            sleep 10
+          done
       - name: E2E and accessibility
         run: pnpm test:e2e
         working-directory: frontend
@@ -101,7 +112,7 @@ jobs:
           uv run alembic downgrade base
 
   stack:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bookloop
     services:
@@ -135,7 +146,7 @@ jobs:
         with:
           working-directory: backend
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install chromium
         working-directory: frontend
       - name: Full-stack browser tests
         run: pnpm test:stack
