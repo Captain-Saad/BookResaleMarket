@@ -14,7 +14,7 @@ const AuthForm = ({
   successHref,
   suspendedHref,
 }: AuthFormProps) => {
-  const { form, onSubmit, isComplete } = useAuthForm({
+  const { form, onSubmit, isComplete, isReady } = useAuthForm({
     formId,
     errorMessages,
     token,
@@ -35,14 +35,14 @@ const AuthForm = ({
             {copy.successMessage}
           </p>
         ) : (
-          <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
+          <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
             <FormFields form={form} fields={copy.fields} idPrefix={formId} />
             {rootError && (
               <p role="alert" className="text-sm text-danger-ink">
                 {rootError}
               </p>
             )}
-            <Button type="submit" loading={form.formState.isSubmitting}>
+            <Button type="submit" loading={form.formState.isSubmitting} disabled={!isReady}>
               {copy.submitLabel}
             </Button>
           </form>

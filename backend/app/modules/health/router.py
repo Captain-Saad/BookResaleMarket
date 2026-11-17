@@ -2,14 +2,15 @@
 
 from typing import Literal
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
 from app.core.db import database_is_ready
+from app.core.deps import public
 from app.core.errors import ProblemDetails, ServiceUnavailableError
 from app.core.redis import redis_is_ready
 
-router = APIRouter(tags=["health"])
+router = APIRouter(tags=["health"], dependencies=[Depends(public)])
 
 
 class HealthResponse(BaseModel):

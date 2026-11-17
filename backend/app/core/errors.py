@@ -54,6 +54,30 @@ class UnauthorizedError(AppError):
     code = "not_authenticated"
 
 
+class ForbiddenError(AppError):
+    status = HTTPStatus.FORBIDDEN
+    code = "forbidden"
+
+
+class InvalidTokenError(AppError):
+    status = HTTPStatus.BAD_REQUEST
+    code = "invalid_token"
+
+
+class InvalidCurrentPasswordError(AppError):
+    status = HTTPStatus.BAD_REQUEST
+    code = "invalid_current_password"
+
+
+class RateLimitedError(AppError):
+    status = HTTPStatus.TOO_MANY_REQUESTS
+    code = "rate_limited"
+
+    def __init__(self, retry_after: int) -> None:
+        super().__init__()
+        self.retry_after = retry_after
+
+
 class ServiceUnavailableError(AppError):
     status = HTTPStatus.SERVICE_UNAVAILABLE
     code = "service_unavailable"
@@ -90,7 +114,10 @@ def problem_response(
 async def _app_error(request: Request, exc: Exception) -> JSONResponse:
     if not isinstance(exc, AppError):
         raise exc
-    return problem_response(request, status=exc.status, code=exc.code, detail=exc.detail)
+    response = problem_response(request, status=exc.status, code=exc.code, detail=exc.detail)
+    if isinstance(exc, RateLimitedError):
+        response.headers["Retry-After"] = str(exc.retry_after)
+    return response
 
 
 async def _http_error(request: Request, exc: Exception) -> JSONResponse:

@@ -100,6 +100,52 @@ jobs:
           uv run alembic check
           uv run alembic downgrade base
 
+  stack:
+    runs-on: ubuntu-latest
+    env:
+      E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bookloop
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bookloop
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      mailpit:
+        image: axllent/mailpit:v1.33.0
+        ports:
+          - 1025:1025
+          - 8025:8025
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          working-directory: backend
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Full-stack browser tests
+        run: pnpm test:stack
+        working-directory: frontend
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: stack-playwright-report
+          path: frontend/playwright-report
+
   security:
     runs-on: ubuntu-latest
     steps:

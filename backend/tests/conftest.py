@@ -15,6 +15,7 @@ from testcontainers.community.postgres import PostgresContainer
 from alembic import command
 from app.core.config import Settings, get_settings
 from app.core.db import to_async_url
+from app.integrations.email.fake import FakeNotifier
 from app.main import create_app
 
 ALEMBIC_INI = Path(__file__).resolve().parent.parent / "alembic.ini"
@@ -85,5 +86,64 @@ def api(database_url: str) -> Iterator[TestClient]:
         database_direct_url=database_url,
         bcrypt_rounds=4,
     )
-    with TestClient(create_app(settings)) as test_client:
+    app = create_app(settings)
+    app.state.notifier = FakeNotifier()
+    with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def scalar(database_url: str) -> Callable[[str], object]:
+    def run_query(sql: str) -> object:
+        async def run() -> object:
+            engine = create_async_engine(to_async_url(database_url), poolclass=NullPool)
+            async with engine.connect() as connection:
+                value = await connection.scalar(text(sql))
+            await engine.dispose()
+            return value
+
+        return asyncio.run(run())
+
+    return run_query
+
+
+@pytest.fixture
+def execute_sql(database_url: str) -> Callable[[str], None]:
+    def run_statement(sql: str) -> None:
+        async def run() -> None:
+            engine = create_async_engine(to_async_url(database_url), poolclass=NullPool)
+            async with engine.begin() as connection:
+                await connection.execute(text(sql))
+            await engine.dispose()
+
+        asyncio.run(run())
+
+    return run_statement
+
+
+@pytest.fixture
+def sign_in(api: TestClient) -> Callable[[str], None]:
+    """Signs in as this email, registering it first if it's new."""
+
+    def run(email: str) -> None:
+        api.cookies.clear()
+        password = "a-good-password"
+        api.post(
+            "/api/v1/auth/register",
+            json={"displayName": "Ada", "email": email, "password": password},
+        )
+        response = api.post("/api/v1/auth/login", json={"email": email, "password": password})
+        assert response.status_code == 200
+
+    return run
+
+
+@pytest.fixture
+def set_verification(execute_sql: Callable[[str], None]) -> Callable[[str, str], None]:
+    def run(email: str, status: str) -> None:
+        execute_sql(
+            f"UPDATE seller_verifications SET status = '{status}' "
+            f"WHERE user_id = (SELECT id FROM users WHERE email = '{email}')"
+        )
+
+    return run

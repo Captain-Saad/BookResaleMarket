@@ -3,10 +3,22 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.identity.models import AuthSession, Profile, Role, User, UserRole
+from app.modules.identity.models import (
+    Address,
+    AuditLog,
+    AuthSession,
+    EmailToken,
+    Profile,
+    Role,
+    SellerVerification,
+    TokenPurpose,
+    User,
+    UserRole,
+)
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
@@ -68,3 +80,149 @@ async def revoke_session(db: AsyncSession, token_hash: str, now: datetime) -> No
         .where(AuthSession.token_hash == token_hash, AuthSession.revoked_at.is_(None))
         .values(revoked_at=now)
     )
+
+
+async def revoke_all_sessions(db: AsyncSession, user_id: UUID, now: datetime) -> None:
+    await db.execute(
+        update(AuthSession)
+        .where(AuthSession.user_id == user_id, AuthSession.revoked_at.is_(None))
+        .values(revoked_at=now)
+    )
+
+
+async def revoke_other_sessions(
+    db: AsyncSession, user_id: UUID, keep_session_id: UUID, now: datetime
+) -> None:
+    await db.execute(
+        update(AuthSession)
+        .where(
+            AuthSession.user_id == user_id,
+            AuthSession.id != keep_session_id,
+            AuthSession.revoked_at.is_(None),
+        )
+        .values(revoked_at=now)
+    )
+
+
+async def replace_email_token(
+    db: AsyncSession,
+    *,
+    user_id: UUID,
+    purpose: TokenPurpose,
+    token_hash: str,
+    now: datetime,
+    expires_at: datetime,
+) -> None:
+    await db.execute(
+        update(EmailToken)
+        .where(
+            EmailToken.user_id == user_id,
+            EmailToken.purpose == purpose,
+            EmailToken.used_at.is_(None),
+        )
+        .values(used_at=now)
+    )
+    db.add(
+        EmailToken(user_id=user_id, purpose=purpose, token_hash=token_hash, expires_at=expires_at)
+    )
+    await db.flush()
+
+
+async def consume_email_token(
+    db: AsyncSession, *, purpose: TokenPurpose, token_hash: str, now: datetime
+) -> UUID | None:
+    """One atomic update, so two simultaneous requests can't both use the same link."""
+    return await db.scalar(
+        update(EmailToken)
+        .where(
+            EmailToken.token_hash == token_hash,
+            EmailToken.purpose == purpose,
+            EmailToken.used_at.is_(None),
+            EmailToken.expires_at > now,
+        )
+        .values(used_at=now)
+        .returning(EmailToken.user_id)
+    )
+
+
+async def get_user(db: AsyncSession, user_id: UUID) -> User:
+    return await db.get_one(User, user_id)
+
+
+async def add_role(db: AsyncSession, user_id: UUID, role: Role) -> bool:
+    """Returns True if the user didn't already have the role."""
+    added = await db.scalar(
+        insert(UserRole)
+        .values(user_id=user_id, role=role)
+        .on_conflict_do_nothing()
+        .returning(UserRole.role)
+    )
+    return added is not None
+
+
+async def list_addresses(db: AsyncSession, user_id: UUID) -> list[Address]:
+    rows = await db.scalars(select(Address).where(Address.user_id == user_id).order_by(Address.id))
+    return list(rows)
+
+
+async def get_owned_address(db: AsyncSession, user_id: UUID, address_id: UUID) -> Address | None:
+    return await db.scalar(
+        select(Address).where(Address.id == address_id, Address.user_id == user_id)
+    )
+
+
+async def add_address(db: AsyncSession, address: Address) -> None:
+    db.add(address)
+    await db.flush()
+
+
+async def delete_owned_address(db: AsyncSession, user_id: UUID, address_id: UUID) -> bool:
+    deleted = await db.scalar(
+        delete(Address)
+        .where(Address.id == address_id, Address.user_id == user_id)
+        .returning(Address.id)
+    )
+    return deleted is not None
+
+
+async def get_seller_verification(db: AsyncSession, user_id: UUID) -> SellerVerification | None:
+    return await db.get(SellerVerification, user_id)
+
+
+async def add_seller_verification(db: AsyncSession, verification: SellerVerification) -> None:
+    db.add(verification)
+    await db.flush()
+
+
+async def add_audit(
+    db: AsyncSession,
+    *,
+    actor_user_id: UUID | None,
+    action: str,
+    target_type: str,
+    target_id: str,
+    now: datetime,
+    details: dict[str, str] | None = None,
+) -> None:
+    db.add(
+        AuditLog(
+            actor_user_id=actor_user_id,
+            action=action,
+            target_type=target_type,
+            target_id=target_id,
+            details=details or {},
+            created_at=now,
+        )
+    )
+    await db.flush()
+
+
+async def list_users(db: AsyncSession, *, cursor: UUID | None, limit: int) -> list[User]:
+    query = select(User).order_by(User.id).limit(limit)
+    if cursor is not None:
+        query = query.where(User.id > cursor)
+    return list(await db.scalars(query))
+
+
+async def get_user_or_none(db: AsyncSession, user_id: UUID) -> User | None:
+    return await db.get(User, user_id)

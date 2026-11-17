@@ -1,11 +1,10 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import AddressManager from "@/components/domain/address-manager";
 import ProfileForm from "@/components/domain/profile-form";
 import SellerPanel from "@/components/domain/seller-panel";
-import { resetMockAccount } from "@/lib/api/mocks/handlers";
 import {
   ADDRESS_MANAGER_COPY,
   API_BASE_URL,
@@ -14,10 +13,53 @@ import {
   SELLER_PANEL_COPY,
   VALIDATION,
 } from "@/lib/constants";
+import { resetMockAccount } from "../utils/mock-api";
 import { server } from "../utils/msw";
 
+const push = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push, refresh: () => {} }),
+  usePathname: () => "/account",
+}));
+
 beforeEach(() => {
+  push.mockClear();
   resetMockAccount();
+});
+
+describe("expired or blocked sessions", () => {
+  it("sends a signed-out user to sign in, then back here", async () => {
+    server.use(
+      http.get(`${API_BASE_URL}${API_PATHS.me}`, () =>
+        HttpResponse.json({ code: "not_authenticated" }, { status: 401 }),
+      ),
+    );
+    render(<ProfileForm copy={PROFILE_FORM_COPY} />);
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/login?next=%2Faccount"));
+  });
+
+  it("sends a suspended user to the suspended page", async () => {
+    server.use(
+      http.get(`${API_BASE_URL}${API_PATHS.me}`, () =>
+        HttpResponse.json({ code: "account_suspended" }, { status: 403 }),
+      ),
+    );
+    render(<ProfileForm copy={PROFILE_FORM_COPY} />);
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/suspended"));
+  });
+
+  it("does the same when suspended while saving", async () => {
+    render(<ProfileForm copy={PROFILE_FORM_COPY} />);
+    const save = await screen.findByRole("button", { name: PROFILE_FORM_COPY.submitLabel });
+    await waitFor(() => expect(screen.getByLabelText("Name")).toHaveValue("Ada Reader"));
+    server.use(
+      http.patch(`${API_BASE_URL}${API_PATHS.me}`, () =>
+        HttpResponse.json({ code: "account_suspended" }, { status: 403 }),
+      ),
+    );
+    await userEvent.click(save);
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/suspended"));
+  });
 });
 
 describe("ProfileForm", () => {
