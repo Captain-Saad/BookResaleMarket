@@ -10,7 +10,7 @@ A marketplace for buying and selling used books. ("BookLoop" is a placeholder na
 ├── frontend/              # Next.js app (App Router, TypeScript, Tailwind)
 ├── backend/               # FastAPI app (uv, SQLAlchemy, Alembic, ARQ)
 ├── packages/api-client/   # TypeScript types generated from the API's OpenAPI schema
-├── docker-compose.yml     # Redis for local development
+├── docker-compose.yml     # Redis and a test email inbox for local development
 └── Makefile               # the commands below
 ```
 
@@ -35,7 +35,7 @@ Each app documents its variables in its own `.env.example`. Real `.env*` files a
 
 | Command | What it does |
 |---|---|
-| `make dev` | Starts Redis, the API on http://localhost:8000 and the web app on http://localhost:3000 |
+| `make dev` | Starts Redis, the test inbox on http://localhost:8025, the API on http://localhost:8000 and the web app on http://localhost:3000 |
 | `make check` | Lint, format, types and unit tests for both apps, plus `alembic check` (needs the database) |
 | `make test` | Unit tests for both apps |
 | `make e2e` | Playwright end-to-end and accessibility tests |

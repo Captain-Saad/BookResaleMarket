@@ -6,7 +6,15 @@ from uuid import UUID
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.identity.models import AuthSession, Profile, Role, User, UserRole
+from app.modules.identity.models import (
+    AuthSession,
+    EmailToken,
+    Profile,
+    Role,
+    TokenPurpose,
+    User,
+    UserRole,
+)
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
@@ -68,3 +76,56 @@ async def revoke_session(db: AsyncSession, token_hash: str, now: datetime) -> No
         .where(AuthSession.token_hash == token_hash, AuthSession.revoked_at.is_(None))
         .values(revoked_at=now)
     )
+
+
+async def revoke_all_sessions(db: AsyncSession, user_id: UUID, now: datetime) -> None:
+    await db.execute(
+        update(AuthSession)
+        .where(AuthSession.user_id == user_id, AuthSession.revoked_at.is_(None))
+        .values(revoked_at=now)
+    )
+
+
+async def replace_email_token(
+    db: AsyncSession,
+    *,
+    user_id: UUID,
+    purpose: TokenPurpose,
+    token_hash: str,
+    now: datetime,
+    expires_at: datetime,
+) -> None:
+    await db.execute(
+        update(EmailToken)
+        .where(
+            EmailToken.user_id == user_id,
+            EmailToken.purpose == purpose,
+            EmailToken.used_at.is_(None),
+        )
+        .values(used_at=now)
+    )
+    db.add(
+        EmailToken(user_id=user_id, purpose=purpose, token_hash=token_hash, expires_at=expires_at)
+    )
+    await db.flush()
+
+
+async def consume_email_token(
+    db: AsyncSession, *, purpose: TokenPurpose, token_hash: str, now: datetime
+) -> UUID | None:
+    """One atomic update, so two simultaneous requests can't both use the same link."""
+    return await db.scalar(
+        update(EmailToken)
+        .where(
+            EmailToken.token_hash == token_hash,
+            EmailToken.purpose == purpose,
+            EmailToken.used_at.is_(None),
+            EmailToken.expires_at > now,
+        )
+        .values(used_at=now)
+        .returning(EmailToken.user_id)
+    )
+
+
+async def get_user(db: AsyncSession, user_id: UUID) -> User:
+    return await db.get_one(User, user_id)

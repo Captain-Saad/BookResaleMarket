@@ -41,6 +41,18 @@ class LoginRequest(ApiModel):
     password: str = Field(min_length=1, max_length=1000)
 
 
+class EmailRequest(ApiModel):
+    email: Email
+
+
+class TokenRequest(ApiModel):
+    token: str = Field(min_length=1, max_length=200)
+
+
+class ResetPasswordRequest(TokenRequest):
+    password: NewPassword
+
+
 class AccountResponse(ApiModel):
     email: str
     email_verified: bool
