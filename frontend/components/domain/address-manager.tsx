@@ -41,7 +41,7 @@ const AddressManager = ({ copy }: AddressManagerProps) => {
       ) : addresses.length === 0 ? (
         <p className="text-ink-2">{copy.empty}</p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="grid gap-3 lg:grid-cols-2">
           {addresses.map((address) => (
             <li
               key={address.id}
@@ -73,7 +73,7 @@ const AddressManager = ({ copy }: AddressManagerProps) => {
         title={copy.formTitle}
         closeLabel={copy.closeLabel}
       >
-        <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
+        <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
           <FormFields form={form} fields={copy.fields} idPrefix="address" />
           {saveFailed}
           <div className="flex justify-end gap-2">

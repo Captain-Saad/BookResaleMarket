@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import timedelta
 
 import pytest
@@ -30,6 +31,7 @@ def _production_client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     settings = Settings(
         _env_file=None,
         env="production",
+        allowed_hosts=["testserver"],
         database_url="postgresql://u:p@localhost:6543/db",
         database_direct_url="postgresql://u:p@localhost:5432/db",
         redis_url="redis://localhost:6399/0",
@@ -37,35 +39,67 @@ def _production_client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     return TestClient(create_app(settings))
 
 
-def test_switching_role(client: TestClient) -> None:
-    response = client.post("/api/v1/dev/session", json={"role": "courier"})
+@pytest.fixture
+def admin_api(
+    api: TestClient, sign_in: Callable[[str], None], execute_sql: Callable[[str], None]
+) -> TestClient:
+    email = "admin@example.com"
+    sign_in(email)
+    execute_sql(
+        "INSERT INTO user_roles (user_id, role) "
+        f"SELECT id, 'admin' FROM users WHERE email='{email}'"
+    )
+    return api
+
+
+def test_switching_role(admin_api: TestClient) -> None:
+    response = admin_api.post("/api/v1/dev/session", json={"role": "courier"})
     assert response.status_code == 200
     assert response.json() == {"role": "courier"}
 
 
-def test_unknown_roles_are_rejected(client: TestClient) -> None:
-    response = client.post("/api/v1/dev/session", json={"role": "superuser"})
+def test_unknown_roles_are_rejected(admin_api: TestClient) -> None:
+    response = admin_api.post("/api/v1/dev/session", json={"role": "superuser"})
     assert response.status_code == 422
     assert response.json()["code"] == "validation_error"
 
 
-def test_seed_and_reset_report_record_counts(client: TestClient) -> None:
-    assert client.post("/api/v1/dev/seed").json() == {"seeded": 0}
-    assert client.post("/api/v1/dev/reset").json() == {"reset": 0}
+def test_seed_and_reset_report_record_counts(admin_api: TestClient) -> None:
+    assert admin_api.post("/api/v1/dev/seed").json() == {"seeded": 0}
+    assert admin_api.post("/api/v1/dev/reset").json() == {"reset": 0}
 
 
-def test_advancing_the_clock_moves_backend_time(client: TestClient) -> None:
-    clock = client.app.state.clock  # type: ignore[attr-defined]
+def test_advancing_the_clock_moves_backend_time(admin_api: TestClient) -> None:
+    clock = admin_api.app.state.clock  # type: ignore[attr-defined]
     before = clock.now()
-    response = client.post("/api/v1/dev/clock/advance", json={"hours": 24})
+    response = admin_api.post("/api/v1/dev/clock/advance", json={"hours": 24})
     assert response.status_code == 200
     assert response.json()["advancedHours"] == 24
     assert clock.now() - before >= timedelta(hours=24)
 
 
 @pytest.mark.parametrize("hours", [0, -1, 24 * 30 + 1])
-def test_clock_advance_is_bounded(client: TestClient, hours: int) -> None:
-    assert client.post("/api/v1/dev/clock/advance", json={"hours": hours}).status_code == 422
+def test_clock_advance_is_bounded(admin_api: TestClient, hours: int) -> None:
+    assert admin_api.post("/api/v1/dev/clock/advance", json={"hours": hours}).status_code == 422
+
+
+def test_recording_a_verification_result(admin_api: TestClient) -> None:
+    admin_api.post("/api/v1/me/roles/seller")
+    admin_api.post("/api/v1/me/seller-verification")
+    response = admin_api.post(
+        "/api/v1/dev/seller-verification",
+        json={"email": "admin@example.com", "status": "verified"},
+    )
+    assert response.status_code == 200
+    assert admin_api.get("/api/v1/me").json()["sellerVerification"] == "verified"
+
+
+def test_recording_a_result_needs_an_existing_verification(admin_api: TestClient) -> None:
+    response = admin_api.post(
+        "/api/v1/dev/seller-verification",
+        json={"email": "admin@example.com", "status": "verified"},
+    )
+    assert response.status_code == 404
 
 
 @pytest.mark.parametrize(("method", "path", "body"), DEV_PATHS)

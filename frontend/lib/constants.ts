@@ -1,10 +1,11 @@
 import { Package, Search, Tag, User } from "lucide-react";
 
+import type { paths } from "@bookloop/api-client/schema";
 import {
   AuthFormId,
-  HealthStatus,
   SellerVerificationStatus,
   ToastTone,
+  UserRole,
   VerifyEmailStatus,
 } from "@/lib/types";
 
@@ -34,15 +35,20 @@ export const ROUTES = {
   verifyEmail: "/verify-email",
   suspended: "/suspended",
   account: "/account",
+  orders: "/orders",
+  sell: "/sell",
+  warehouse: "/warehouse",
+  courier: "/courier",
+  admin: "/admin",
   addresses: "/account/addresses",
   seller: "/account/seller",
 } as const;
 
 export const PRIMARY_NAV = [
   { id: "browse", href: ROUTES.books, label: "Browse" },
-  { id: "sell", href: "/sell", label: "Sell" },
-  { id: "orders", href: "/orders", label: "Orders" },
-  { id: "account", href: ROUTES.login, label: "Account" },
+  { id: "sell", href: ROUTES.sell, label: "Sell" },
+  { id: "orders", href: ROUTES.orders, label: "Orders" },
+  { id: "account", href: ROUTES.account, label: "Account" },
 ] as const;
 
 export const NAV_ICONS = { browse: Search, sell: Tag, orders: Package, account: User } as const;
@@ -167,6 +173,16 @@ export const OVERLAY_LABELS = { close: "Close", dismiss: "Dismiss" } as const;
 
 export const LOADING_LABEL = "Loading…";
 
+export const APP_SHELL = {
+  siteName: SITE_NAME,
+  description: SITE_DESCRIPTION,
+  homeHref: ROUTES.home,
+  searchHref: ROUTES.books,
+  navItems: PRIMARY_NAV,
+  labels: NAV_LABELS,
+  themeToggleLabel: THEME_TOGGLE_LABEL,
+} as const;
+
 export const BACK_HOME_LINK = { href: ROUTES.home, label: "Back to home" } as const;
 
 export const ERROR_PAGE = {
@@ -188,20 +204,26 @@ export const DEV_ROLES = [
   { value: "admin", label: "Admin" },
 ] as const;
 
-export const HEALTH_BADGE_LABELS = {
-  [HealthStatus.Checking]: "Checking API…",
-  [HealthStatus.Online]: "API online",
-  [HealthStatus.Offline]: "API offline",
-} as const;
+export const SESSION_COOKIE = "bookloop_session";
 
-export const HEALTH_BADGE_TONES = {
-  [HealthStatus.Checking]: "neutral",
-  [HealthStatus.Online]: "success",
-  [HealthStatus.Offline]: "danger",
-} as const;
+export const NEXT_PARAM = "next";
+
+export const TOKEN_PARAM = "token";
+
+export const GUARD_TIMEOUT_MS = 3000;
+
+export const ROUTE_GUARDS = [
+  { prefix: ROUTES.account },
+  { prefix: ROUTES.orders },
+  { prefix: ROUTES.sell },
+  { prefix: ROUTES.warehouse, role: UserRole.Warehouse },
+  { prefix: ROUTES.courier, role: UserRole.Courier },
+  { prefix: ROUTES.admin, role: UserRole.Admin },
+] as const;
 
 export const API_PATHS = {
   login: "/api/v1/auth/login",
+  logout: "/api/v1/auth/logout",
   register: "/api/v1/auth/register",
   forgotPassword: "/api/v1/auth/forgot-password",
   resetPassword: "/api/v1/auth/reset-password",
@@ -212,6 +234,19 @@ export const API_PATHS = {
   addresses: "/api/v1/me/addresses",
   becomeSeller: "/api/v1/me/roles/seller",
   sellerVerification: "/api/v1/me/seller-verification",
+} as const satisfies Record<string, keyof paths>;
+
+export const ADDRESS_ITEM_PATH = "/api/v1/me/addresses/{address_id}" satisfies keyof paths;
+
+export const FIELD_LIMITS = {
+  email: 320,
+  displayName: 100,
+  phone: 32,
+  recipientName: 100,
+  addressLine: 200,
+  city: 100,
+  region: 100,
+  postalCode: 20,
 } as const;
 
 export const PASSWORD_MIN_LENGTH = 8;
@@ -219,6 +254,7 @@ export const PASSWORD_MAX_BYTES = 72;
 
 export const VALIDATION = {
   required: "This field is required.",
+  tooLong: "This is too long.",
   email: "Enter a valid email address.",
   passwordTooShort: `Use at least ${PASSWORD_MIN_LENGTH} characters.`,
   passwordTooLong: "That password is too long. Use a shorter one.",
@@ -228,7 +264,6 @@ export const VALIDATION = {
 export const AUTH_ERROR_MESSAGES = {
   default: "Something went wrong. Please try again.",
   invalid_credentials: "That email and password don't match.",
-  email_taken: "An account with this email already exists.",
   invalid_current_password: "That isn't your current password.",
   not_authenticated: "Your session has ended. Please sign in again.",
   invalid_token: "This link has expired or was already used. Please request a new one.",
@@ -332,6 +367,12 @@ export const VERIFY_EMAIL_COPY = {
 
 export const ACCOUNT_NAV = {
   label: "Account",
+  signOutLabel: "Sign out",
+  roleLinks: [
+    { href: ROUTES.warehouse, label: "Warehouse", role: UserRole.Warehouse },
+    { href: ROUTES.courier, label: "Courier", role: UserRole.Courier },
+    { href: ROUTES.admin, label: "Admin", role: UserRole.Admin },
+  ],
   links: [
     { href: ROUTES.account, label: "Profile" },
     { href: ROUTES.addresses, label: "Addresses" },

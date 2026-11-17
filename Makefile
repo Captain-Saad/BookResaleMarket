@@ -1,4 +1,4 @@
-.PHONY: install hooks redis dev dev-api dev-web check check-web check-api test e2e lighthouse audit migrate openapi
+.PHONY: install hooks services dev dev-api dev-web check check-web check-api test e2e e2e-stack lighthouse audit migrate openapi
 
 install:
 	pnpm install --frozen-lockfile
@@ -7,14 +7,14 @@ install:
 hooks:
 	cd backend && uv run pre-commit install
 
-redis:
-	docker compose up -d --wait redis
+services:
+	docker compose up -d --wait redis mailpit
 
-dev: redis
+dev: services
 	$(MAKE) -j2 dev-api dev-web
 
 dev-api:
-	cd backend && uv run uvicorn app.main:create_app --factory --reload
+	cd backend && uv run uvicorn app.main:create_app --factory --reload --no-server-header
 
 dev-web:
 	cd frontend && pnpm dev
@@ -36,6 +36,10 @@ test:
 
 e2e:
 	cd frontend && pnpm test:e2e
+
+e2e-stack:
+	docker compose --profile test up -d --wait postgres-test mailpit
+	cd frontend && pnpm test:stack
 
 lighthouse:
 	cd frontend && pnpm build && CHROME_PATH="$$(node -e "console.log(require('@playwright/test').chromium.executablePath())")" pnpm lighthouse

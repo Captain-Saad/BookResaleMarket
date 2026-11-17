@@ -1,3 +1,4 @@
+import type { components } from "@bookloop/api-client/schema";
 import type { Dialog, Select as SelectPrimitive, Toast as ToastPrimitive } from "radix-ui";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
@@ -12,12 +13,6 @@ export enum ToastTone {
   Neutral = "neutral",
   Success = "success",
   Danger = "danger",
-}
-
-export enum HealthStatus {
-  Checking = "checking",
-  Online = "online",
-  Offline = "offline",
 }
 
 export enum AuthFormId {
@@ -41,11 +36,6 @@ export enum LoadStatus {
   Failed = "failed",
 }
 
-export enum UserStatus {
-  Active = "active",
-  Suspended = "suspended",
-}
-
 export enum SaveStatus {
   Idle = "idle",
   Saved = "saved",
@@ -53,7 +43,12 @@ export enum SaveStatus {
 }
 
 export enum UserRole {
+  Buyer = "buyer",
   Seller = "seller",
+  Warehouse = "warehouse",
+  Courier = "courier",
+  Dispatcher = "dispatcher",
+  Admin = "admin",
 }
 
 export enum ProblemCode {
@@ -66,6 +61,16 @@ export enum SellerVerificationStatus {
   Verified = "verified",
   Rejected = "rejected",
 }
+
+export type ApiOutcome<T> = { data?: T; error?: unknown; response: Response };
+
+export type Account = components["schemas"]["AccountResponse"];
+
+export type Address = components["schemas"]["AddressResponse"];
+
+export type AddressRequest = components["schemas"]["AddressRequest"];
+
+export type AccountUpdateRequest = components["schemas"]["AccountUpdateRequest"];
 
 export type ChildrenProps = Readonly<{ children: ReactNode }>;
 
@@ -117,7 +122,22 @@ export type BottomTabBarProps = { navItems: readonly PrimaryNavItem[]; label: st
 
 export type NavDrawerProps = { navLinks: readonly NavLink[]; labels: NavLabels };
 
-export type PlaceholderPageProps = { title: string; description: string; homeLink: NavLink };
+export type AppShellProps = ChildrenProps & {
+  siteName: string;
+  description: string;
+  homeHref: string;
+  searchHref: string;
+  navItems: readonly PrimaryNavItem[];
+  labels: NavLabels;
+  themeToggleLabel: string;
+};
+
+export type PlaceholderPageProps = {
+  title: string;
+  description: string;
+  homeLink: NavLink;
+  narrow?: boolean;
+};
 
 export type SelectOption = { value: string; label: string };
 
@@ -166,11 +186,6 @@ export type ErrorPageProps = {
   retry: () => void;
 };
 
-export type HealthBadgeProps = {
-  labels: Readonly<Record<HealthStatus, string>>;
-  tones: Readonly<Record<HealthStatus, "neutral" | "success" | "danger">>;
-};
-
 export type AuthFormValues = Record<string, string>;
 
 export type FormFieldConfig = {
@@ -217,6 +232,8 @@ export type AuthFormProps = {
 
 export type UseAuthFormOptions = Omit<AuthFormProps, "copy">;
 
+export type LoginPageProps = { searchParams: Promise<{ next?: string | string[] }> };
+
 export type TokenPageProps = { searchParams: Promise<{ token?: string | string[] }> };
 
 export type VerifyEmailCopy = Readonly<Record<VerifyEmailStatus, string>> & {
@@ -226,7 +243,16 @@ export type VerifyEmailCopy = Readonly<Record<VerifyEmailStatus, string>> & {
 
 export type VerifyEmailStatusProps = { token: string; copy: VerifyEmailCopy };
 
-export type AccountNavProps = { label: string; links: readonly NavLink[] };
+export type RoleNavLink = NavLink & { role: UserRole };
+
+export type RouteGuard = { prefix: string; role?: UserRole };
+
+export type AccountNavProps = {
+  label: string;
+  links: readonly NavLink[];
+  roleLinks: readonly RoleNavLink[];
+  signOutLabel: string;
+};
 
 export type AccountCopy = {
   loading: string;
@@ -276,7 +302,7 @@ export type SellerPanelCopy = AccountCopy & {
   becomeLabel: string;
   startLabel: string;
   statusLabel: string;
-  startableStatuses: readonly SellerVerificationStatus[];
+  startableStatuses: readonly string[];
   statuses: Readonly<Record<SellerVerificationStatus, { badge: string; description: string }>>;
 };
 
