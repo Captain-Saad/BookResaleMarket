@@ -27,7 +27,6 @@ const ListingWizard = ({ copy, initial }: ListingWizardProps) => {
         </Link>
         <div className="grid gap-6 lg:grid-cols-[14rem_1fr]">
           <ol
-            tabIndex={0}
             aria-label={copy.title}
             className="flex gap-3 overflow-auto focus-visible:outline-2 focus-visible:outline-brand lg:flex-col"
           >
@@ -35,18 +34,24 @@ const ListingWizard = ({ copy, initial }: ListingWizardProps) => {
               <li
                 key={label}
                 aria-current={index === step ? "step" : undefined}
-                className="flex min-h-11 shrink-0 items-center gap-3 rounded-lg px-3 text-sm text-ink-1"
+                className="shrink-0"
               >
-                <span
-                  className={
-                    index === step
-                      ? "flex size-8 items-center justify-center rounded-full bg-brand text-on-brand"
-                      : "flex size-8 items-center justify-center rounded-full bg-glass-2"
-                  }
+                <button
+                  type="button"
+                  onClick={wizard.goToStep(index)}
+                  className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm text-ink-1 focus-visible:outline-2 focus-visible:outline-brand"
                 >
-                  {index + 1}
-                </span>
-                {label}
+                  <span
+                    className={
+                      index === step
+                        ? "flex size-8 items-center justify-center rounded-full bg-brand text-on-brand"
+                        : "flex size-8 items-center justify-center rounded-full bg-glass-2"
+                    }
+                  >
+                    {index + 1}
+                  </span>
+                  {label}
+                </button>
               </li>
             ))}
           </ol>

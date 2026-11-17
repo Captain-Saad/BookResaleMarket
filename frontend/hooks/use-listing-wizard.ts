@@ -88,6 +88,10 @@ const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
     setError("");
     setStep((current) => Math.min(current + 1, copy.steps.length - 1));
   };
+  const goToStep = (index: number) => () => {
+    setError("");
+    setStep(index);
+  };
   const back = () => {
     setError("");
     setStep((current) => Math.max(current - 1, 0));
@@ -222,6 +226,7 @@ const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
     lookup,
     next,
     back,
+    goToStep,
     save,
     price,
     changePrice,
