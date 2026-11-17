@@ -2,10 +2,13 @@ from typing import Annotated, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path, Query, Request
+from fastapi.responses import RedirectResponse, Response
 
 from app.core.deps import ClockDep, DbDep, public
+from app.core.errors import ServiceUnavailableError
 from app.core.rate_limit import enforce, rate_limit_by_ip
 from app.integrations.isbn.base import IsbnLookupProvider
+from app.integrations.storage.base import ImageScanner, PhotoStorage
 from app.modules.identity.deps import require_roles
 from app.modules.identity.models import Role
 from app.modules.identity.service import Authenticated
@@ -16,6 +19,9 @@ from app.modules.listings.schemas import (
     ListingPage,
     ListingPatchRequest,
     ListingResponse,
+    PhotoCompleteRequest,
+    PhotoUploadRequest,
+    PhotoUploadResponse,
 )
 from app.modules.listings.service import lookup_book
 
@@ -47,35 +53,168 @@ async def create_listing(
     body: ListingDraftRequest, request: Request, auth: Seller, db: DbDep, clock: ClockDep
 ) -> ListingResponse:
     await enforce(request, "listing-create-user", str(auth.user.id), 30, 3600)
-    return await service.create(db, clock, auth, body)
+    return photo_urls(await service.create(db, clock, auth, body), request)
 
 
 @router.patch("/listings/{listing_id}")
 async def patch_listing(
-    listing_id: UUID, body: ListingPatchRequest, auth: Seller, db: DbDep, clock: ClockDep
+    listing_id: UUID,
+    body: ListingPatchRequest,
+    request: Request,
+    auth: Seller,
+    db: DbDep,
+    clock: ClockDep,
 ) -> ListingResponse:
-    return await service.patch(db, clock, auth, listing_id, body)
+    return photo_urls(await service.patch(db, clock, auth, listing_id, body), request)
 
 
 @router.post("/listings/{listing_id}/publish")
 async def publish_listing(
-    listing_id: UUID, auth: Seller, db: DbDep, clock: ClockDep
+    listing_id: UUID, request: Request, auth: Seller, db: DbDep, clock: ClockDep
 ) -> ListingResponse:
-    return await service.publish(db, clock, auth, listing_id)
+    return photo_urls(await service.publish(db, clock, auth, listing_id), request)
 
 
 @router.post("/listings/{listing_id}/deactivate")
 async def deactivate_listing(
-    listing_id: UUID, auth: Seller, db: DbDep, clock: ClockDep
+    listing_id: UUID, request: Request, auth: Seller, db: DbDep, clock: ClockDep
 ) -> ListingResponse:
-    return await service.deactivate(db, clock, auth, listing_id)
+    return photo_urls(await service.deactivate(db, clock, auth, listing_id), request)
 
 
 @router.get("/me/listings")
 async def my_listings(
+    request: Request,
     auth: Seller,
     db: DbDep,
     cursor: UUID | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> ListingPage:
-    return await service.own_listings(db, auth, cursor, limit)
+    result = await service.own_listings(db, auth, cursor, limit)
+    return result.model_copy(update={"items": [photo_urls(item, request) for item in result.items]})
+
+
+def get_storage(request: Request) -> PhotoStorage:
+    storage = cast(PhotoStorage | None, request.app.state.photo_storage)
+    if storage is None:
+        raise ServiceUnavailableError(code="storage_unavailable")
+    return storage
+
+
+Storage = Annotated[PhotoStorage, Depends(get_storage)]
+local_router = APIRouter(prefix="/api/v1/dev/listing-uploads", tags=["development"])
+
+
+@router.post("/listings/{listing_id}/photos/upload-url")
+async def photo_upload_url(
+    listing_id: UUID,
+    body: PhotoUploadRequest,
+    request: Request,
+    auth: Seller,
+    db: DbDep,
+    clock: ClockDep,
+    storage: Storage,
+) -> PhotoUploadResponse:
+    return await service.photo_ticket(
+        db,
+        clock,
+        auth,
+        listing_id,
+        body,
+        storage,
+        str(request.base_url).rstrip("/") + "/api/v1/dev/listing-uploads",
+    )
+
+
+@local_router.put("/{photo_id}", dependencies=[Depends(public)], status_code=204)
+async def upload_dev_photo(
+    photo_id: UUID,
+    request: Request,
+    db: DbDep,
+    clock: ClockDep,
+    storage: Storage,
+    token: Annotated[str, Query(min_length=32, max_length=128)],
+) -> None:
+    await service.local_upload(
+        db,
+        clock,
+        photo_id,
+        token,
+        request.headers.get("content-type", ""),
+        await request.body(),
+        storage,
+    )
+
+
+@router.post("/listings/{listing_id}/photos/complete")
+async def complete_listing_photo(
+    listing_id: UUID,
+    body: PhotoCompleteRequest,
+    request: Request,
+    auth: Seller,
+    db: DbDep,
+    clock: ClockDep,
+    storage: Storage,
+) -> ListingResponse:
+    result = await service.complete_photo(
+        db,
+        clock,
+        auth,
+        listing_id,
+        body.photo_id,
+        storage,
+        cast(ImageScanner, request.app.state.image_scanner),
+        request.app.state.image_slots,
+    )
+    return photo_urls(result, request)
+
+
+@router.delete("/listings/{listing_id}/photos/{photo_id}")
+async def delete_listing_photo(
+    listing_id: UUID,
+    photo_id: UUID,
+    request: Request,
+    auth: Seller,
+    db: DbDep,
+    clock: ClockDep,
+    storage: Storage,
+) -> ListingResponse:
+    return photo_urls(
+        await service.remove_photo(db, clock, auth, listing_id, photo_id, storage), request
+    )
+
+
+@router.get("/listings/{listing_id}/photos/{photo_id}", name="read_listing_photo")
+async def read_listing_photo(
+    listing_id: UUID,
+    photo_id: UUID,
+    auth: Seller,
+    db: DbDep,
+    storage: Storage,
+) -> Response:
+    url, data = await service.read_photo(db, auth, listing_id, photo_id, storage)
+    headers = {"Cache-Control": "private, no-store"}
+    return (
+        RedirectResponse(url, status_code=307, headers=headers)
+        if url
+        else Response(data, media_type="image/jpeg", headers=headers)
+    )
+
+
+def photo_urls(result: ListingResponse, request: Request) -> ListingResponse:
+    return result.model_copy(
+        update={
+            "photos": [
+                photo.model_copy(
+                    update={
+                        "url": str(
+                            request.url_for(
+                                "read_listing_photo", listing_id=result.id, photo_id=photo.id
+                            )
+                        )
+                    }
+                )
+                for photo in result.photos
+            ]
+        }
+    )

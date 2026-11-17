@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3000"]
     allowed_hosts: list[str] = ["localhost", "127.0.0.1"]
     max_request_bytes: int = 1_000_000
+    storage_url: str | None = None
+    storage_service_key: SecretStr | None = None
+    storage_bucket: str = "listing-photos"
     bcrypt_rounds: int = 12
     smtp_host: str = "localhost"
     smtp_port: int = 1025

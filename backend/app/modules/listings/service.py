@@ -1,16 +1,26 @@
+import asyncio
+import warnings
 from datetime import timedelta
+from hmac import compare_digest
+from io import BytesIO
 from uuid import UUID
 
+from PIL import Image, ImageOps, UnidentifiedImageError
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import Clock
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError
+from app.core.errors import AppError, ConflictError, ForbiddenError, NotFoundError
+from app.core.ids import uuid7
+from app.core.security import hash_token, new_token
 from app.integrations.isbn.base import IsbnLookupProvider, normalize_isbn
+from app.integrations.storage.base import ImageScanner, PhotoStorage
 from app.modules.identity import service as identity
 from app.modules.identity.service import Authenticated
 from app.modules.listings import repository
 from app.modules.listings.models import Book, Listing
+from app.modules.listings.models import ListingPhoto as PhotoModel
 from app.modules.listings.repository import get_book
 from app.modules.listings.schemas import (
     BookMetadata,
@@ -20,6 +30,8 @@ from app.modules.listings.schemas import (
     ListingPhoto,
     ListingResponse,
     ListingStatus,
+    PhotoUploadRequest,
+    PhotoUploadResponse,
 )
 
 
@@ -200,3 +212,227 @@ async def own_listings(
 
 async def address_in_use(db: AsyncSession, seller_id: UUID, address_id: UUID) -> bool:
     return await repository.address_in_use(db, seller_id, address_id)
+
+
+MAX_PHOTO_BYTES = 5 * 1024 * 1024
+MAX_PHOTO_PIXELS = 20_000_000
+ALLOWED_FORMATS = {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp"}
+
+
+class InvalidPhotoError(AppError):
+    status = 422
+    code = "invalid_photo"
+
+
+def clean_image(data: bytes, expected_type: str) -> bytes:
+    if not data or len(data) > MAX_PHOTO_BYTES:
+        raise InvalidPhotoError()
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(BytesIO(data)) as image:
+                if (
+                    image.width * image.height > MAX_PHOTO_PIXELS
+                    or ALLOWED_FORMATS.get(image.format or "") != expected_type
+                    or getattr(image, "is_animated", False)
+                ):
+                    raise InvalidPhotoError()
+                image.verify()
+            with Image.open(BytesIO(data)) as image:
+                upright = ImageOps.exif_transpose(image)
+                cleaned = Image.new("RGB", upright.size, "white")
+                if upright.mode in {"RGBA", "LA"} or "transparency" in upright.info:
+                    rgba = upright.convert("RGBA")
+                    cleaned.paste(rgba, mask=rgba.getchannel("A"))
+                else:
+                    cleaned.paste(upright.convert("RGB"))
+                output = BytesIO()
+                cleaned.save(output, format="JPEG", quality=85)
+                result = output.getvalue()
+        if len(result) > MAX_PHOTO_BYTES:
+            raise InvalidPhotoError()
+        return result
+    except (
+        UnidentifiedImageError,
+        OSError,
+        ValueError,
+        Image.DecompressionBombError,
+        Image.DecompressionBombWarning,
+    ):
+        raise InvalidPhotoError() from None
+
+
+async def photo_ticket(
+    db: AsyncSession,
+    clock: Clock,
+    auth: Authenticated,
+    listing_id: UUID,
+    body: PhotoUploadRequest,
+    storage: PhotoStorage,
+    local_url: str,
+) -> PhotoUploadResponse:
+    listing = await get_owned(db, auth, listing_id, lock=True)
+    if listing.purchase_locked:
+        raise ConflictError(code="listing_purchase_locked")
+    photos = await repository.listing_photos(db, listing_id, all_photos=True)
+    for photo in list(photos):
+        if (
+            not photo.validated
+            and photo.upload_expires_at
+            and photo.upload_expires_at <= clock.now()
+        ):
+            await storage.delete(photo.path)
+            await db.delete(photo)
+            photos.remove(photo)
+    await db.flush()
+    if len(photos) >= 6:
+        raise ConflictError(code="photo_limit_reached")
+    photo_id, token = uuid7(), new_token()
+    path = f"quarantine/{auth.user.id}/{listing_id}/{photo_id}"
+    position = next(
+        index for index in range(6) if index not in {photo.position for photo in photos}
+    )
+    photo = PhotoModel(
+        id=photo_id,
+        listing_id=listing_id,
+        path=path,
+        content_type=body.content_type,
+        size_bytes=body.size_bytes,
+        position=position,
+        validated=False,
+        upload_token_hash=hash_token(token),
+        upload_expires_at=clock.now() + timedelta(minutes=5),
+        created_at=clock.now(),
+        updated_at=clock.now(),
+    )
+    url = await storage.upload_url(path)
+    db.add(photo)
+    await db.commit()
+    return PhotoUploadResponse(
+        photo_id=photo_id, upload_url=url or f"{local_url}/{photo_id}?token={token}", expires_in=300
+    )
+
+
+async def local_upload(
+    db: AsyncSession,
+    clock: Clock,
+    photo_id: UUID,
+    token: str,
+    content_type: str,
+    data: bytes,
+    storage: PhotoStorage,
+) -> None:
+    photo = await db.scalar(select(PhotoModel).where(PhotoModel.id == photo_id).with_for_update())
+    if (
+        photo is None
+        or not photo.upload_token_hash
+        or not compare_digest(hash_token(token), photo.upload_token_hash)
+        or photo.validated
+        or photo.upload_expires_at is None
+        or photo.upload_expires_at <= clock.now()
+    ):
+        raise NotFoundError()
+    if content_type != photo.content_type or len(data) != photo.size_bytes:
+        raise InvalidPhotoError()
+    try:
+        await storage.store(photo.path, data, content_type)
+    except FileExistsError:
+        raise ConflictError(code="photo_already_uploaded") from None
+
+
+async def complete_photo(
+    db: AsyncSession,
+    clock: Clock,
+    auth: Authenticated,
+    listing_id: UUID,
+    photo_id: UUID,
+    storage: PhotoStorage,
+    scanner: ImageScanner,
+    slots: asyncio.Semaphore,
+) -> ListingResponse:
+    listing = await get_owned(db, auth, listing_id, lock=True)
+    if listing.purchase_locked:
+        raise ConflictError(code="listing_purchase_locked")
+    photo = await db.scalar(
+        select(PhotoModel).where(PhotoModel.id == photo_id, PhotoModel.listing_id == listing_id)
+    )
+    if photo is None:
+        raise NotFoundError()
+    if photo.validated:
+        return await view(db, listing)
+    if photo.upload_expires_at is None or photo.upload_expires_at <= clock.now():
+        raise ConflictError(code="photo_upload_expired")
+    try:
+        data = await storage.download(photo.path, MAX_PHOTO_BYTES)
+    except ValueError:
+        raise InvalidPhotoError() from None
+    if len(data) != photo.size_bytes or not await scanner.scan(data):
+        raise InvalidPhotoError()
+    async with slots:
+        cleaned = await asyncio.to_thread(clean_image, data, photo.content_type)
+    raw_path = photo.path
+    clean_path = f"clean/{auth.user.id}/{listing_id}/{uuid7()}.jpg"
+    await storage.store(clean_path, cleaned, "image/jpeg")
+    photo.path, photo.content_type, photo.size_bytes = clean_path, "image/jpeg", len(cleaned)
+    photo.validated, photo.upload_token_hash, photo.upload_expires_at = True, None, None
+    photo.updated_at = listing.updated_at = clock.now()
+    listing.version += 1
+    try:
+        await db.commit()
+    except Exception:
+        await storage.delete(clean_path)
+        raise
+    await storage.delete(raw_path)
+    await db.refresh(listing)
+    return await view(db, listing)
+
+
+async def remove_photo(
+    db: AsyncSession,
+    clock: Clock,
+    auth: Authenticated,
+    listing_id: UUID,
+    photo_id: UUID,
+    storage: PhotoStorage,
+) -> ListingResponse:
+    listing = await get_owned(db, auth, listing_id, lock=True)
+    if listing.purchase_locked:
+        raise ConflictError(code="listing_purchase_locked")
+    photos = await repository.listing_photos(db, listing_id, all_photos=True)
+    photo = next((photo for photo in photos if photo.id == photo_id), None)
+    if photo is None:
+        raise NotFoundError()
+    if (
+        photo.validated
+        and listing.status in {"active", "reserved", "sold"}
+        and sum(photo.validated for photo in photos) <= 1
+    ):
+        raise ConflictError(code="listing_photos_required")
+    await db.delete(photo)
+    listing.updated_at = clock.now()
+    listing.version += 1
+    await db.commit()
+    await storage.delete(photo.path)
+    await db.refresh(listing)
+    return await view(db, listing)
+
+
+async def read_photo(
+    db: AsyncSession,
+    auth: Authenticated,
+    listing_id: UUID,
+    photo_id: UUID,
+    storage: PhotoStorage,
+) -> tuple[str | None, bytes | None]:
+    await get_owned(db, auth, listing_id)
+    photo = await db.scalar(
+        select(PhotoModel).where(
+            PhotoModel.id == photo_id,
+            PhotoModel.listing_id == listing_id,
+            PhotoModel.validated.is_(True),
+        )
+    )
+    if photo is None:
+        raise NotFoundError()
+    url = await storage.read_url(photo.path)
+    return (url, None) if url else (None, await storage.download(photo.path, MAX_PHOTO_BYTES))

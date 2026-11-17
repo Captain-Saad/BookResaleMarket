@@ -1,7 +1,9 @@
 """Application factory. Run with: uv run uvicorn app.main:create_app --factory --reload"""
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI
@@ -24,10 +26,14 @@ from app.core.security_headers import SecurityHeadersMiddleware
 from app.integrations.email.smtp import SmtpNotifier
 from app.integrations.isbn.real import OpenLibraryProvider
 from app.integrations.seller_verification.fake import FakeSellerVerificationProvider
+from app.integrations.storage.base import DevelopmentImageScanner
+from app.integrations.storage.fake import LocalPhotoStorage
+from app.integrations.storage.real import SupabasePhotoStorage
 from app.modules.dev.router import router as dev_router
 from app.modules.health.router import router as health_router
 from app.modules.identity.admin_router import admin_router
 from app.modules.identity.router import auth_router, me_router
+from app.modules.listings.router import local_router as local_photo_router
 from app.modules.listings.router import router as listing_router
 from app.modules.listings.schemas import CONTRACT_MODELS
 
@@ -59,6 +65,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.isbn_provider = OpenLibraryProvider()
+    app.state.photo_storage = (
+        SupabasePhotoStorage(
+            settings.storage_url,
+            settings.storage_service_key.get_secret_value(),
+            settings.storage_bucket,
+        )
+        if settings.storage_url
+        and settings.storage_service_key
+        and settings.storage_service_key.get_secret_value()
+        else None
+        if settings.is_production
+        else LocalPhotoStorage(Path("var/listing-photos"))
+    )
+    app.state.image_scanner = DevelopmentImageScanner()
+    app.state.image_slots = asyncio.Semaphore(2)
     app.state.seller_verification = FakeSellerVerificationProvider()
     app.state.notifier = SmtpNotifier(settings.smtp_host, settings.smtp_port, settings.email_from)
     app.state.clock = SystemClock() if settings.is_production else OffsetClock()
@@ -68,11 +89,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Content-Type", "Authorization", REQUEST_ID_HEADER],
         expose_headers=[REQUEST_ID_HEADER],
     )
-    app.add_middleware(RequestSizeLimitMiddleware, max_bytes=settings.max_request_bytes)
+    app.add_middleware(
+        RequestSizeLimitMiddleware,
+        max_bytes=settings.max_request_bytes,
+        photo_uploads=not settings.is_production,
+    )
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_hosts)
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_production)
     register_exception_handlers(app)
@@ -83,6 +108,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(admin_router)
     if not settings.is_production:
         app.include_router(dev_router)
+        app.include_router(local_photo_router)
 
     def openapi() -> dict[str, Any]:
         if app.openapi_schema is None:

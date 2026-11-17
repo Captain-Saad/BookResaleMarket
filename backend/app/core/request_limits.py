@@ -12,19 +12,27 @@ PAYLOAD_TOO_LARGE = int(HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
 
 
 class RequestSizeLimitMiddleware:
-    def __init__(self, app: ASGIApp, *, max_bytes: int) -> None:
+    def __init__(self, app: ASGIApp, *, max_bytes: int, photo_uploads: bool = False) -> None:
         self.app = app
         self.max_bytes = max_bytes
+        self.photo_uploads = photo_uploads
 
-    def _declared_too_large(self, scope: Scope) -> bool:
+    def _declared_too_large(self, scope: Scope, limit: int) -> bool:
         declared = Headers(scope=scope).get("content-length", "")
-        return declared.isdigit() and int(declared) > self.max_bytes
+        return declared.isdigit() and int(declared) > limit
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
-        if self._declared_too_large(scope):
+        limit = (
+            5 * 1024 * 1024
+            if self.photo_uploads
+            and scope["method"] == "PUT"
+            and scope["path"].startswith("/api/v1/dev/listing-uploads/")
+            else self.max_bytes
+        )
+        if self._declared_too_large(scope, limit):
             response = JSONResponse(
                 {"title": "Payload Too Large", "status": 413, "code": "payload_too_large"},
                 status_code=PAYLOAD_TOO_LARGE,
@@ -40,7 +48,7 @@ class RequestSizeLimitMiddleware:
             message = await receive()
             if message["type"] == "http.request":
                 received += len(message.get("body", b""))
-                if received > self.max_bytes:
+                if received > limit:
                     raise HTTPException(status_code=PAYLOAD_TOO_LARGE)
             return message
 
