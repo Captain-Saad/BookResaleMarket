@@ -31,3 +31,15 @@ export const listingDraft = (listing: SellerListing): ListingDraft => ({
   currency: listing.currency,
   addressId: listing.addressId,
 });
+
+export const parsePrice = (value: string): number | null => {
+  if (!/^\d+(\.\d{0,2})?$/.test(value)) return null;
+  const [whole = "0", fraction = ""] = value.split(".");
+  const minor = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+  return Number.isSafeInteger(minor) && minor > 0 && minor <= 100_000_000 ? minor : null;
+};
+
+export const formatPrice = (minor: number | null, currency: string) =>
+  minor === null
+    ? "—"
+    : new Intl.NumberFormat("en", { style: "currency", currency }).format(minor / 100);

@@ -55,6 +55,58 @@ export const listingHandlers = [
       return HttpResponse.json(updated);
     },
   ),
+  http.post<{ id: string }>(`${API_BASE_URL}${LISTING_API.listings}/:id/publish`, ({ params }) => {
+    const listing = listings.find((item) => item.id === params.id);
+    if (!listing) return HttpResponse.json({ code: "not_found" }, { status: 404 });
+    listing.status = listing.fulfillment === "warehouse" ? "incoming" : "active";
+    listing.identityLocked = listing.status === "active";
+    listing.version++;
+    return HttpResponse.json(listing);
+  }),
+  http.post<{ id: string }>(
+    `${API_BASE_URL}${LISTING_API.listings}/:id/deactivate`,
+    ({ params }) => {
+      const listing = listings.find((item) => item.id === params.id);
+      if (!listing) return HttpResponse.json({ code: "not_found" }, { status: 404 });
+      listing.status = "deactivated";
+      listing.version++;
+      return HttpResponse.json(listing);
+    },
+  ),
+  http.post<{ id: string }>(`${API_BASE_URL}${LISTING_API.listings}/:id/photos/upload-url`, () => {
+    const photoId = crypto.randomUUID();
+    return HttpResponse.json({
+      photoId,
+      uploadUrl: `${API_BASE_URL}/mock-photo/${photoId}`,
+      expiresIn: 300,
+    });
+  }),
+  http.put(`${API_BASE_URL}/mock-photo/:id`, () => new HttpResponse(null, { status: 200 })),
+  http.post<{ id: string }, { photoId: string }>(
+    `${API_BASE_URL}${LISTING_API.listings}/:id/photos/complete`,
+    async ({ params, request }) => {
+      const listing = listings.find((item) => item.id === params.id);
+      if (!listing) return HttpResponse.json({ code: "not_found" }, { status: 404 });
+      const { photoId } = await request.json();
+      listing.photos.push({
+        id: photoId,
+        url: "https://covers.openlibrary.org/b/isbn/9780441478125-M.jpg",
+        position: listing.photos.length,
+      });
+      listing.version++;
+      return HttpResponse.json(listing);
+    },
+  ),
+  http.delete<{ id: string; photo: string }>(
+    `${API_BASE_URL}${LISTING_API.listings}/:id/photos/:photo`,
+    ({ params }) => {
+      const listing = listings.find((item) => item.id === params.id);
+      if (!listing) return HttpResponse.json({ code: "not_found" }, { status: 404 });
+      listing.photos = listing.photos.filter((photo) => photo.id !== params.photo);
+      listing.version++;
+      return HttpResponse.json(listing);
+    },
+  ),
   http.get(`${API_BASE_URL}${LISTING_API.mine}`, () =>
     HttpResponse.json({ items: listings, nextCursor: null }),
   ),

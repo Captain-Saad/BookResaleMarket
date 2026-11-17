@@ -322,3 +322,5 @@ export enum ListingStep {
 }
 export type ListingCopy = typeof import("./constants").LISTING_COPY;
 export type ListingWizardProps = { copy: ListingCopy; initial?: SellerListing };
+
+export type MyListingsProps = { copy: ListingCopy };

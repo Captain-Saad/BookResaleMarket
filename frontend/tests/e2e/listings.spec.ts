@@ -10,7 +10,7 @@ test("seller wizard supports manual entry and retains earlier steps", async ({ p
   await page.getByLabel("Book title", { exact: true }).fill("The Dispossessed");
   await page.getByLabel("Author", { exact: true }).fill("Ursula K. Le Guin");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await expect(page.getByLabel("Condition", { exact: true })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Condition", exact: true })).toBeVisible();
   await page.getByLabel("Condition notes", { exact: true }).fill("A little shelf wear.");
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.getByLabel("Book title", { exact: true })).toHaveValue("The Dispossessed");
@@ -19,3 +19,20 @@ test("seller wizard supports manual entry and retains earlier steps", async ({ p
     (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations,
   ).toEqual([]);
 });
+
+for (const colorScheme of ["dark", "light"] as const) {
+  test(`listing wizard has accessible ${colorScheme} surfaces`, async ({ page }, testInfo) => {
+    await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+    await page.goto("/sell");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Give your next chapter a new home",
+    );
+    expect(
+      (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations,
+    ).toEqual([]);
+    await testInfo.attach(`listing-wizard-${colorScheme}`, {
+      body: await page.screenshot({ fullPage: true }),
+      contentType: "image/png",
+    });
+  });
+}
