@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-from pydantic import Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
 
 from app.core.schemas import ApiModel
 
@@ -44,6 +44,7 @@ class BookMetadata(ApiModel):
 
 
 class ListingDraftRequest(ApiModel):
+    model_config = ConfigDict(extra="forbid")
     isbn: str | None = Field(default=None, max_length=32)
     title: str = Field(default="", max_length=300)
     author: str = Field(default="", max_length=200)
@@ -56,6 +57,7 @@ class ListingDraftRequest(ApiModel):
 
 
 class ListingPatchRequest(ApiModel):
+    model_config = ConfigDict(extra="forbid")
     isbn: str | None = Field(default=None, max_length=32)
     title: str | None = Field(default=None, max_length=300)
     author: str | None = Field(default=None, max_length=200)
@@ -109,6 +111,7 @@ class ListingPage(ApiModel):
 
 
 class PhotoUploadRequest(ApiModel):
+    model_config = ConfigDict(extra="forbid")
     content_type: str = Field(pattern=r"^image/(jpeg|png|webp)$")
     size_bytes: int = Field(gt=0, le=5 * 1024 * 1024, strict=True)
 
@@ -120,6 +123,7 @@ class PhotoUploadResponse(ApiModel):
 
 
 class PhotoCompleteRequest(ApiModel):
+    model_config = ConfigDict(extra="forbid")
     photo_id: UUID
 
 

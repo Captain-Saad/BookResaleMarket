@@ -126,6 +126,37 @@ describe("AddressManager", () => {
     expect(await screen.findByText(ADDRESS_MANAGER_COPY.empty)).toBeInTheDocument();
   });
 
+  it("explains when a listing prevents address deletion", async () => {
+    server.use(
+      http.get(`${API_BASE_URL}${API_PATHS.addresses}`, () =>
+        HttpResponse.json([
+          {
+            id: "019a0000-0000-7000-8000-000000000001",
+            recipientName: "Ada",
+            line1: "1 Main St",
+            line2: null,
+            city: "Lahore",
+            region: "Punjab",
+            postalCode: "54000",
+            country: "PK",
+          },
+        ]),
+      ),
+      http.delete(`${API_BASE_URL}${API_PATHS.addresses}/:id`, () =>
+        HttpResponse.json({ code: "address_in_use" }, { status: 409 }),
+      ),
+    );
+    render(<AddressManager copy={ADDRESS_MANAGER_COPY} />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: ADDRESS_MANAGER_COPY.deleteLabel }));
+    const dialog = await screen.findByRole("dialog", { name: ADDRESS_MANAGER_COPY.deleteTitle });
+    await user.click(
+      within(dialog).getByRole("button", { name: ADDRESS_MANAGER_COPY.deleteLabel }),
+    );
+    expect(await screen.findByText(ADDRESS_MANAGER_COPY.deleteBlocked)).toBeInTheDocument();
+    expect(screen.getByText("1 Main St")).toBeInTheDocument();
+  });
+
   it("rejects an invalid country code", async () => {
     render(<AddressManager copy={ADDRESS_MANAGER_COPY} />);
     const user = userEvent.setup();

@@ -402,6 +402,7 @@
         "type": "object"
       },
       "ListingDraftRequest": {
+        "additionalProperties": false,
         "properties": {
           "addressId": {
             "anyOf": [
@@ -507,6 +508,7 @@
         "type": "object"
       },
       "ListingPatchRequest": {
+        "additionalProperties": false,
         "properties": {
           "addressId": {
             "anyOf": [
@@ -814,6 +816,7 @@
         "type": "object"
       },
       "PhotoCompleteRequest": {
+        "additionalProperties": false,
         "properties": {
           "photoId": {
             "format": "uuid",
@@ -828,6 +831,7 @@
         "type": "object"
       },
       "PhotoUploadRequest": {
+        "additionalProperties": false,
         "properties": {
           "contentType": {
             "pattern": "^image/(jpeg|png|webp)$",
@@ -1777,6 +1781,186 @@
         ]
       }
     },
+    "/api/v1/listings": {
+      "post": {
+        "operationId": "create_listing_api_v1_listings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Listing",
+        "tags": [
+          "listings"
+        ]
+      }
+    },
+    "/api/v1/listings/{listing_id}": {
+      "patch": {
+        "operationId": "patch_listing_api_v1_listings__listing_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Listing",
+        "tags": [
+          "listings"
+        ]
+      }
+    },
+    "/api/v1/listings/{listing_id}/deactivate": {
+      "post": {
+        "operationId": "deactivate_listing_api_v1_listings__listing_id__deactivate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Deactivate Listing",
+        "tags": [
+          "listings"
+        ]
+      }
+    },
+    "/api/v1/listings/{listing_id}/publish": {
+      "post": {
+        "operationId": "publish_listing_api_v1_listings__listing_id__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "listing_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Listing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Publish Listing",
+        "tags": [
+          "listings"
+        ]
+      }
+    },
     "/api/v1/me": {
       "get": {
         "operationId": "get_me_api_v1_me_get",
@@ -1985,6 +2169,68 @@
         "summary": "Update Address",
         "tags": [
           "me"
+        ]
+      }
+    },
+    "/api/v1/me/listings": {
+      "get": {
+        "operationId": "my_listings_api_v1_me_listings_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "My Listings",
+        "tags": [
+          "listings"
         ]
       }
     },

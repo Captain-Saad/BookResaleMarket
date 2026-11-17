@@ -426,6 +426,8 @@ export const ADDRESS_MANAGER_COPY = {
   cancelLabel: "Cancel",
   deleteTitle: "Delete this address?",
   deleteDescription: "This can't be undone. Existing orders keep their delivery details.",
+  deleteBlocked:
+    "This address is used by a listing. Change or deactivate that listing before deleting it.",
   fields: [
     { name: "recipientName", label: "Recipient name", type: "text", autoComplete: "name" },
     { name: "line1", label: "Address line 1", type: "text", autoComplete: "address-line1" },

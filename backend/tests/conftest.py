@@ -112,9 +112,11 @@ def execute_sql(database_url: str) -> Callable[[str], None]:
     def run_statement(sql: str) -> None:
         async def run() -> None:
             engine = create_async_engine(to_async_url(database_url), poolclass=NullPool)
-            async with engine.begin() as connection:
-                await connection.execute(text(sql))
-            await engine.dispose()
+            try:
+                async with engine.begin() as connection:
+                    await connection.execute(text(sql))
+            finally:
+                await engine.dispose()
 
         asyncio.run(run())
 

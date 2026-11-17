@@ -325,9 +325,19 @@ async def update_address(
 
 
 async def delete_address(db: AsyncSession, user: User, address_id: UUID) -> None:
-    if not await repository.delete_owned_address(db, user.id, address_id):
+    from app.modules.listings.service import address_in_use
+
+    if await repository.get_owned_address(db, user.id, address_id) is None:
         raise NotFoundError()
-    await db.commit()
+    if await address_in_use(db, user.id, address_id):
+        raise ConflictError(code="address_in_use")
+    try:
+        if not await repository.delete_owned_address(db, user.id, address_id):
+            raise NotFoundError()
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise ConflictError(code="address_in_use") from None
 
 
 async def _grant(

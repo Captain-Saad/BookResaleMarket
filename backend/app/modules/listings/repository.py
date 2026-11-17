@@ -35,3 +35,18 @@ async def own_page(
     if cursor is not None:
         query = query.where(Listing.id < cursor)
     return list(await db.scalars(query.order_by(Listing.id.desc()).limit(limit)))
+
+
+async def address_in_use(db: AsyncSession, seller_id: UUID, address_id: UUID) -> bool:
+    return (
+        await db.scalar(
+            select(Listing.id)
+            .where(
+                Listing.seller_id == seller_id,
+                Listing.address_id == address_id,
+                Listing.status.in_(["incoming", "active", "reserved", "sold"]),
+            )
+            .limit(1)
+        )
+        is not None
+    )

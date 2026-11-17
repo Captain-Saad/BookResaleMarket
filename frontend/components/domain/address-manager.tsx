@@ -22,9 +22,9 @@ const AddressManager = ({ copy }: AddressManagerProps) => {
     setDeleting,
     confirmDelete,
   } = useAddressManager();
-  const saveFailed = saveStatus === SaveStatus.Failed && (
+  const saveFailed = (saveStatus === SaveStatus.Failed || saveStatus === SaveStatus.Blocked) && (
     <p role="alert" className="text-sm text-danger-ink">
-      {copy.saveFailed}
+      {saveStatus === SaveStatus.Blocked ? copy.deleteBlocked : copy.saveFailed}
     </p>
   );
 

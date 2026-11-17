@@ -159,7 +159,8 @@ export const useAddressManager = () => {
       });
       if (redirectIfNeeded(outcome)) return;
       if (!outcome.response.ok) {
-        setSaveStatus(SaveStatus.Failed);
+        const code = problemSchema.safeParse(outcome.error).data?.code;
+        setSaveStatus(code === ProblemCode.AddressInUse ? SaveStatus.Blocked : SaveStatus.Failed);
         return;
       }
       setData(addresses.filter((item) => item.id !== deleting.id));
@@ -180,7 +181,10 @@ export const useAddressManager = () => {
     openEditor,
     closeEditor: () => setEditing(null),
     deleting,
-    setDeleting,
+    setDeleting: (address: Address | null) => {
+      setSaveStatus(SaveStatus.Idle);
+      setDeleting(address);
+    },
     confirmDelete,
   };
 };

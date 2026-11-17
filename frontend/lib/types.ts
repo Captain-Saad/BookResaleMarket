@@ -37,6 +37,7 @@ export enum LoadStatus {
 }
 
 export enum SaveStatus {
+  Blocked = "blocked",
   Idle = "idle",
   Saved = "saved",
   Failed = "failed",
@@ -52,6 +53,7 @@ export enum UserRole {
 }
 
 export enum ProblemCode {
+  AddressInUse = "address_in_use",
   AccountSuspended = "account_suspended",
 }
 
@@ -291,6 +293,7 @@ export type AddressManagerCopy = AccountCopy & {
   cancelLabel: string;
   deleteTitle: string;
   deleteDescription: string;
+  deleteBlocked: string;
   fields: readonly FormFieldConfig[];
 };
 
