@@ -57,6 +57,7 @@ def test_docs_are_hidden_in_production(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings(
         _env_file=None,
         env="production",
+        allowed_hosts=["testserver"],
         database_url="postgresql://user:secret@localhost:6543/db",
         database_direct_url="postgresql://user:secret@localhost:5432/db",
         redis_url="redis://localhost:6399/0",

@@ -40,6 +40,7 @@ Approximately **82 PRs** in total (down from 140). S0-00 and S0-01 are already d
 - **S1-06** BE Admin suspend/unsuspend + `audit_log` + per-request suspension check + route-auth enumeration test + session negative tests.
 - **S1-07** WIRE Real login/register/logout with the session cookie, route guards, role-aware nav.
 - **S1-08** WIRE `/me`, addresses, seller verification, suspended screen.
+- **S1-09** Hardening: security response headers on the API and web app, allowed hosts, request size limit, `no-store` on API responses, database checks for email and country, frontend max lengths. Moved up from S13-02.
 
 **→ S1 GATE.**
 
@@ -151,7 +152,7 @@ Approximately **82 PRs** in total (down from 140). S0-00 and S0-01 are already d
 
 ## S13 — Hardening and release (F13 + M13 rest)
 - **S13-01** Full a11y audit + fixes, visual-regression baselines.
-- **S13-02** Performance budgets, bundle analysis, security headers, CSP, secrets/rotation docs.
+- **S13-02** Performance budgets, bundle analysis, CSP, secrets/rotation docs (other security headers arrived in S1-09).
 - **S13-03** Security scans, ASVS L2 checklist, traceability document (every FR/NFR → test).
 - **S13-04** Load tests + chaos tests (provider/Redis down).
 - **S13-05** Runbook, deploy config, backup/restore drill.

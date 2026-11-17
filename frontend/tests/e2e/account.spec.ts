@@ -1,11 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
 
-const API = "http://localhost:8000";
+const API = "http://127.0.0.1:59999";
 const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "*",
-  "Access-Control-Allow-Headers": "*",
+  "Access-Control-Allow-Origin": "http://localhost:3100",
+  "Access-Control-Allow-Credentials": "true",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE",
+  "Access-Control-Allow-Headers": "Content-Type, Accept",
 };
 
 const ACCOUNT = {
@@ -17,6 +18,10 @@ const ACCOUNT = {
   roles: ["buyer"],
   sellerVerification: "not_started",
 };
+
+test.beforeEach(async ({ context, baseURL }) => {
+  await context.addCookies([{ name: "bookloop_session", value: "test", url: baseURL }]);
+});
 
 const mockAccount = (page: Page) =>
   Promise.all([

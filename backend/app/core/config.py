@@ -21,13 +21,26 @@ class Settings(BaseSettings):
     redis_url: SecretStr | None = None
     readiness_timeout_seconds: float = 5.0
     cors_origins: list[str] = ["http://localhost:3000"]
+    allowed_hosts: list[str] = ["localhost", "127.0.0.1"]
+    max_request_bytes: int = 1_000_000
     bcrypt_rounds: int = 12
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    email_from: str = "BookLoop <no-reply@bookloop.test>"
+    frontend_base_url: str = "http://localhost:3000"
+    email_verification_hours: int = 24
+    password_reset_minutes: int = 60
     session_idle_minutes: int = 60 * 24 * 7
     session_absolute_days: int = 30
 
     @property
     def is_production(self) -> bool:
         return self.env == "production"
+
+    @property
+    def trusted_hosts(self) -> list[str]:
+        """TestClient sends `Host: testserver`, so tests allow it too."""
+        return [*self.allowed_hosts, "testserver"] if self.env == "test" else self.allowed_hosts
 
     @property
     def session_cookie_secure(self) -> bool:

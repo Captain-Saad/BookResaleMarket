@@ -1,10 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useForm } from "react-hook-form";
 import { apiFetch } from "@/lib/api/client";
 import { AUTH_FORM_CONFIG, problemSchema } from "@/lib/auth/schemas";
 import { type AuthFormValues, ProblemCode, type UseAuthFormOptions } from "@/lib/types";
+
+const subscribeToNothing = () => () => {};
 
 const useAuthForm = ({
   formId,
@@ -14,6 +16,11 @@ const useAuthForm = ({
   suspendedHref,
 }: UseAuthFormOptions) => {
   const router = useRouter();
+  const isReady = useSyncExternalStore(
+    subscribeToNothing,
+    () => true,
+    () => false,
+  );
   const [isComplete, setIsComplete] = useState(false);
   const { schema, path } = AUTH_FORM_CONFIG[formId];
   const form = useForm<AuthFormValues>({ resolver: zodResolver(schema) });
@@ -23,8 +30,10 @@ const useAuthForm = ({
       const body = JSON.stringify(token ? { ...values, token } : values);
       const result = await apiFetch(path, { method: "POST", body });
       if (result.ok) {
-        if (successHref) router.push(successHref);
-        else setIsComplete(true);
+        if (successHref) {
+          router.push(successHref);
+          router.refresh();
+        } else setIsComplete(true);
         return;
       }
       const code = problemSchema.safeParse(result.body).data?.code;
@@ -40,7 +49,7 @@ const useAuthForm = ({
     }
   });
 
-  return { form, onSubmit, isComplete };
+  return { form, onSubmit, isComplete, isReady };
 };
 
 export default useAuthForm;
