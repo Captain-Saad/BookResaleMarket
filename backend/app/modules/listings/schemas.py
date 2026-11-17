@@ -50,7 +50,7 @@ class ListingDraftRequest(ApiModel):
     condition: Condition = Condition.GOOD
     notes: str = Field(default="", max_length=2000)
     fulfillment: Fulfillment = Fulfillment.ON_DEMAND
-    price_minor: int | None = Field(default=None, gt=0, le=100_000_000, strict=True)
+    price_minor: int | None = Field(default=None, gt=0, le=9_007_199_254_740_991, strict=True)
     currency: Currency = Currency.USD
     address_id: UUID | None = None
 
@@ -62,7 +62,7 @@ class ListingPatchRequest(ApiModel):
     condition: Condition | None = None
     notes: str | None = Field(default=None, max_length=2000)
     fulfillment: Fulfillment | None = None
-    price_minor: int | None = Field(default=None, gt=0, le=100_000_000, strict=True)
+    price_minor: int | None = Field(default=None, gt=0, le=9_007_199_254_740_991, strict=True)
     currency: Currency | None = None
     address_id: UUID | None = None
     version: int = Field(ge=1, strict=True)

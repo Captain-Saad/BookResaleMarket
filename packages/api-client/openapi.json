@@ -457,7 +457,7 @@
             "anyOf": [
               {
                 "exclusiveMinimum": 0,
-                "maximum": 100000000,
+                "maximum": 9007199254740991,
                 "type": "integer"
               },
               {
@@ -597,7 +597,7 @@
             "anyOf": [
               {
                 "exclusiveMinimum": 0,
-                "maximum": 100000000,
+                "maximum": 9007199254740991,
                 "type": "integer"
               },
               {
@@ -1730,6 +1730,50 @@
         "summary": "Act as a role",
         "tags": [
           "dev"
+        ]
+      }
+    },
+    "/api/v1/isbn/{isbn}": {
+      "get": {
+        "operationId": "isbn_lookup_api_v1_isbn__isbn__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "isbn",
+            "required": true,
+            "schema": {
+              "maxLength": 32,
+              "minLength": 10,
+              "title": "Isbn",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookMetadata"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Isbn Lookup",
+        "tags": [
+          "listings"
         ]
       }
     },

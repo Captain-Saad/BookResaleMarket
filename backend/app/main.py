@@ -22,11 +22,13 @@ from app.core.request_id import REQUEST_ID_HEADER, RequestIdMiddleware
 from app.core.request_limits import RequestSizeLimitMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.integrations.email.smtp import SmtpNotifier
+from app.integrations.isbn.real import OpenLibraryProvider
 from app.integrations.seller_verification.fake import FakeSellerVerificationProvider
 from app.modules.dev.router import router as dev_router
 from app.modules.health.router import router as health_router
 from app.modules.identity.admin_router import admin_router
 from app.modules.identity.router import auth_router, me_router
+from app.modules.listings.router import router as listing_router
 from app.modules.listings.schemas import CONTRACT_MODELS
 
 
@@ -56,6 +58,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+    app.state.isbn_provider = OpenLibraryProvider()
     app.state.seller_verification = FakeSellerVerificationProvider()
     app.state.notifier = SmtpNotifier(settings.smtp_host, settings.smtp_port, settings.email_from)
     app.state.clock = SystemClock() if settings.is_production else OffsetClock()
@@ -74,6 +77,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_production)
     register_exception_handlers(app)
     app.include_router(health_router)
+    app.include_router(listing_router)
     app.include_router(auth_router)
     app.include_router(me_router)
     app.include_router(admin_router)

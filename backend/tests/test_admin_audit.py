@@ -21,6 +21,7 @@ USER = "reader@example.com"
 PASSWORD = "a-good-password"
 
 PUBLIC_ROUTES = {
+    ("GET", "/api/v1/isbn/{isbn}"),
     ("GET", "/healthz"),
     ("GET", "/readyz"),
     ("POST", "/api/v1/auth/register"),
