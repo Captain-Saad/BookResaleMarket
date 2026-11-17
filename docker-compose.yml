@@ -8,3 +8,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+  mailpit:
+    image: axllent/mailpit:v1.33.0
+    ports:
+      - "1025:1025"
+      - "8025:8025"
