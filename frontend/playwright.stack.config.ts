@@ -28,6 +28,8 @@ export default defineConfig({
       timeout: 120_000,
       env: {
         BOOKLOOP_ENV: "test",
+        BOOKLOOP_STORAGE_URL: "",
+        BOOKLOOP_STORAGE_SERVICE_KEY: "",
         BOOKLOOP_REDIS_URL: "",
         BOOKLOOP_DATABASE_URL: DATABASE_URL,
         BOOKLOOP_DATABASE_DIRECT_URL: DATABASE_URL,

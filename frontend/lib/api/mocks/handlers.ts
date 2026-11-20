@@ -2,8 +2,6 @@ import type { components } from "@bookloop/api-client/schema";
 import { http, HttpResponse } from "msw";
 import { API_BASE_URL } from "@/lib/constants";
 
-import { listingHandlers } from "./listings";
-
 type Schemas = components["schemas"];
 
 const withRequestId = (init: ResponseInit = {}): ResponseInit => ({
@@ -12,7 +10,6 @@ const withRequestId = (init: ResponseInit = {}): ResponseInit => ({
 });
 
 export const handlers = [
-  ...listingHandlers,
   http.get(`${API_BASE_URL}/healthz`, () =>
     HttpResponse.json<Schemas["HealthResponse"]>({ status: "ok" }, withRequestId()),
   ),

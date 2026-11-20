@@ -47,3 +47,16 @@ Each app documents its variables in its own `.env.example`. Real `.env*` files a
 | `make openapi` | Regenerates `packages/api-client` from the API |
 
 CI runs these checks on every pull request, using its own Postgres and Redis (`.github/workflows/ci.yml`).
+
+
+### S2 listing workflow
+
+Run `make services`, `make migrate`, then `make dev`. Sign in, become a seller at `/account/seller`, start verification, and add a pickup/return address at `/account/addresses`. A verified seller can publish from `/sell`; incomplete drafts autosave and can be reopened at `/sell/listings`.
+
+For local testing, grant an administrator role with `cd backend && uv run python -m scripts.grant_role YOUR_EMAIL admin`, then sign in as that administrator and use **Dev test console → Seller verification** to mark a seller who has started verification as verified. This console and verification endpoint are unavailable in production. The role switch/seed/reset console buttons remain placeholders; they do not create accounts.
+
+Upload up to six JPEG/PNG/WebP photos, 5 MiB each and 20 megapixels. Local development uses private files under `backend/var/listing-photos`; production needs the private Supabase bucket settings in `backend/.env.example`. Upload completion re-encodes images and removes EXIF. The malware scan hook still needs a real production adapter, and private orphan cleanup must be configured before launch.
+
+On-demand publish makes a listing active; warehouse publish leaves it incoming until a later warehouse slice implements intake. ISBN and condition lock permanently after the listing becomes purchasable. Buyer commitment locks sale details/photos. An address used by an incoming, active, reserved or sold listing cannot be deleted until its listing changes or is deactivated.
+
+Run `make check` and `make e2e-stack`. The stack suite uses the isolated `postgres-test` service, the real API and Mailpit. Its listing flow runs at phone, tablet and desktop sizes, checks dark/light accessibility and captures review screenshots. Do not point `E2E_DATABASE_URL` at a development or production database.

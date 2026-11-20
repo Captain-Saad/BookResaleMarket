@@ -9,8 +9,9 @@ import { API_BASE_URL, LISTING_API, LISTING_COPY } from "@/lib/constants";
 import { parsePrice } from "@/lib/listings";
 import { server } from "../utils/msw";
 
+const router = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => router,
   usePathname: () => "/sell/listings",
 }));
 
@@ -105,4 +106,16 @@ it("uploads a photo and publishes the reviewed on-demand listing", async () => {
   await user.click(screen.getByRole("button", { name: LISTING_COPY.next }));
   await user.click(screen.getByRole("button", { name: LISTING_COPY.publish }));
   expect(await screen.findByRole("status")).toHaveTextContent(LISTING_COPY.published);
+});
+
+it("redirects expired listing sessions back through sign in", async () => {
+  router.push.mockClear();
+  server.use(
+    http.get(`${API_BASE_URL}${LISTING_API.mine}`, () =>
+      HttpResponse.json({ code: "not_authenticated" }, { status: 401 }),
+    ),
+  );
+  render(<MyListings copy={LISTING_COPY} />);
+  await screen.findByText(LISTING_COPY.signIn);
+  expect(router.push).toHaveBeenCalledWith("/login?next=%2Fsell%2Flistings");
 });

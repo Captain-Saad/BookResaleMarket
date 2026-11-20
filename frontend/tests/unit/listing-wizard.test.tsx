@@ -10,8 +10,9 @@ import { validIsbn } from "@/lib/listings";
 import { server } from "../utils/msw";
 import { axeViolations } from "../utils/axe";
 
+const router = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => router,
   usePathname: () => "/sell",
 }));
 
@@ -100,4 +101,23 @@ it("pauses failed autosave until another edit or explicit retry", async () => {
   expect(attempts).toBe(1);
   await user.click(screen.getByRole("button", { name: LISTING_COPY.save }));
   await waitFor(() => expect(attempts).toBe(2));
+});
+
+it("keeps a stale edit instead of silently overwriting a newer listing", async () => {
+  server.use(
+    http.patch(`${API_BASE_URL}${LISTING_API.listings}/:id`, () =>
+      HttpResponse.json({ code: "stale_listing" }, { status: 409 }),
+    ),
+  );
+  render(
+    <ListingWizard
+      copy={LISTING_COPY}
+      initial={{ ...mockListing(), title: "Book", author: "Author" }}
+    />,
+  );
+  const user = userEvent.setup();
+  await user.type(screen.getByLabelText(LISTING_COPY.titleLabel), " revised");
+  await user.click(screen.getByRole("button", { name: LISTING_COPY.save }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(LISTING_COPY.stale);
+  expect(screen.getByLabelText(LISTING_COPY.titleLabel)).toHaveValue("Book revised");
 });

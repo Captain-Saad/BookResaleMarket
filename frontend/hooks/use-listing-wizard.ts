@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useCallback, type ChangeEvent } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { listingClient, ListingRequestError } from "@/lib/api/listings";
-import { apiFetch } from "@/lib/api/client";
-import { EMPTY_LISTING_DRAFT, LISTING_API } from "@/lib/constants";
+import { EMPTY_LISTING_DRAFT } from "@/lib/constants";
 import { listingDraft, normalizeIsbn, validIsbn, parsePrice } from "@/lib/listings";
-import type { ListingCopy, ListingDraft, SellerListing } from "@/lib/types";
+import { ProblemCode, type ListingCopy, ListingDraft, SellerListing } from "@/lib/types";
 
 const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
   const [draft, setDraft] = useState<ListingDraft>(() =>
@@ -119,14 +118,17 @@ const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
     (failure: unknown) => {
       if (failure instanceof ListingRequestError) {
         if (failure.status === 401) router.push(`/login?next=${encodeURIComponent(pathname)}`);
-        if (failure.code === "account_suspended") router.push("/suspended");
-        setError(
-          failure.code === "stale_listing"
-            ? copy.stale
-            : failure.code === "seller_not_verified"
-              ? copy.verifiedRequired
-              : copy.failed,
-        );
+        if (failure.code === ProblemCode.AccountSuspended) router.push("/suspended");
+        const messages = new Map<string, string>([
+          [ProblemCode.StaleListing, copy.stale],
+          [ProblemCode.SellerNotVerified, copy.verifiedRequired],
+          [ProblemCode.InvalidPhoto, copy.photoInvalid],
+          [ProblemCode.PhotoLimitReached, copy.photoInvalid],
+          [ProblemCode.PhotoUploadExpired, copy.photoInvalid],
+          [ProblemCode.ListingPurchaseLocked, copy.purchased],
+          [ProblemCode.ListingIdentityLocked, copy.locked],
+        ]);
+        setError(messages.get(failure.code ?? "") ?? copy.failed);
       } else setError(copy.failed);
     },
     [copy, pathname, router],
@@ -198,30 +200,20 @@ const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
     setError("");
     try {
       for (const file of files) {
-        const ticket = await apiFetch(`${LISTING_API.listings}/${current.id}/photos/upload-url`, {
-          method: "POST",
-          body: JSON.stringify({ contentType: file.type, sizeBytes: file.size }),
-        });
-        if (!ticket.ok) throw new Error();
-        const { uploadUrl, photoId } =
-          ticket.body as import("@bookloop/api-client/schema").components["schemas"]["PhotoUploadResponse"];
+        const { uploadUrl, photoId } = await listingClient.ticket(current.id, file);
         const result = await fetch(uploadUrl, {
           method: "PUT",
           headers: { "Content-Type": file.type },
           body: file,
         });
         if (!result.ok) throw new Error();
-        const complete = await apiFetch(`${LISTING_API.listings}/${current.id}/photos/complete`, {
-          method: "POST",
-          body: JSON.stringify({ photoId }),
-        });
-        if (!complete.ok) throw new Error();
-        current = complete.body as SellerListing;
+        current = await listingClient.complete(current.id, photoId);
         setListing(current);
       }
       setMessage(copy.saved);
-    } catch {
-      setError(copy.photoInvalid);
+    } catch (failure) {
+      if (failure instanceof ListingRequestError) reportFailure(failure);
+      else setError(copy.photoInvalid);
     } finally {
       setBusy(false);
     }
@@ -230,13 +222,9 @@ const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
     if (!listing) return;
     setBusy(true);
     try {
-      const result = await apiFetch(`${LISTING_API.listings}/${listing.id}/photos/${photoId}`, {
-        method: "DELETE",
-      });
-      if (!result.ok) throw new Error();
-      setListing(result.body as SellerListing);
-    } catch {
-      setError(copy.failed);
+      setListing(await listingClient.removePhoto(listing.id, photoId));
+    } catch (failure) {
+      reportFailure(failure);
     } finally {
       setBusy(false);
     }
@@ -256,17 +244,10 @@ const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
     if (!saved) return;
     setBusy(true);
     try {
-      const result = await apiFetch(`${LISTING_API.listings}/${saved.id}/publish`, {
-        method: "POST",
-      });
-      if (!result.ok) {
-        setError(result.status === 403 ? copy.verifiedRequired : copy.failed);
-        return;
-      }
-      setListing(result.body as SellerListing);
+      setListing(await listingClient.publish(saved.id));
       setMessage(copy.published);
-    } catch {
-      setError(copy.failed);
+    } catch (failure) {
+      reportFailure(failure);
     } finally {
       setBusy(false);
     }

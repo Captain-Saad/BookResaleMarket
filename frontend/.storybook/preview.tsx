@@ -12,6 +12,7 @@ const preview: Preview = {
   },
   initialGlobals: { theme: "dark" },
   parameters: {
+    nextjs: { appDirectory: true },
     layout: "centered",
     a11y: { test: "error" },
     viewport: {

@@ -53,6 +53,13 @@ export enum UserRole {
 }
 
 export enum ProblemCode {
+  StaleListing = "stale_listing",
+  SellerNotVerified = "seller_not_verified",
+  InvalidPhoto = "invalid_photo",
+  PhotoLimitReached = "photo_limit_reached",
+  PhotoUploadExpired = "photo_upload_expired",
+  ListingPurchaseLocked = "listing_purchase_locked",
+  ListingIdentityLocked = "listing_identity_locked",
   AddressInUse = "address_in_use",
   AccountSuspended = "account_suspended",
 }

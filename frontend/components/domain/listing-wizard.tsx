@@ -68,14 +68,14 @@ const ListingWizard = ({ copy, initial }: ListingWizardProps) => {
                     value={draft.isbn ?? ""}
                     onChange={wizard.change}
                     maxLength={32}
-                    disabled={listing?.identityLocked}
+                    disabled={busy || listing?.identityLocked}
                   />
                 </label>
                 <Button
                   variant="secondary"
                   onClick={wizard.lookup}
                   loading={busy}
-                  disabled={listing?.identityLocked}
+                  disabled={busy || listing?.identityLocked}
                 >
                   {copy.lookup}
                 </Button>
@@ -87,7 +87,7 @@ const ListingWizard = ({ copy, initial }: ListingWizardProps) => {
                     value={draft.title}
                     onChange={wizard.change}
                     maxLength={300}
-                    disabled={listing?.identityLocked}
+                    disabled={busy || listing?.identityLocked}
                   />
                 </label>
                 <label className="flex flex-col gap-2 text-ink-1">
@@ -97,7 +97,7 @@ const ListingWizard = ({ copy, initial }: ListingWizardProps) => {
                     value={draft.author}
                     onChange={wizard.change}
                     maxLength={200}
-                    disabled={listing?.identityLocked}
+                    disabled={busy || listing?.identityLocked}
                   />
                 </label>
               </>
@@ -109,7 +109,7 @@ const ListingWizard = ({ copy, initial }: ListingWizardProps) => {
                     name="condition"
                     value={draft.condition}
                     onChange={wizard.change}
-                    disabled={listing?.identityLocked}
+                    disabled={busy || listing?.identityLocked}
                     className="min-h-11 rounded-md border border-glass-border bg-bg-1 px-3 text-ink-1"
                   >
                     {copy.conditions.map((option) => (
@@ -126,7 +126,7 @@ const ListingWizard = ({ copy, initial }: ListingWizardProps) => {
                     value={draft.notes}
                     onChange={wizard.change}
                     maxLength={2000}
-                    disabled={listing?.purchaseLocked}
+                    disabled={busy || listing?.purchaseLocked}
                   />
                 </label>
               </>
@@ -179,7 +179,7 @@ const ListingWizard = ({ copy, initial }: ListingWizardProps) => {
                         value="warehouse"
                         checked={draft.fulfillment === "warehouse"}
                         onChange={wizard.change}
-                        disabled={listing?.purchaseLocked}
+                        disabled={busy || listing?.purchaseLocked}
                       />
                       {copy.warehouse}
                     </span>
@@ -193,7 +193,7 @@ const ListingWizard = ({ copy, initial }: ListingWizardProps) => {
                         value="on_demand"
                         checked={draft.fulfillment === "on_demand"}
                         onChange={wizard.change}
-                        disabled={listing?.purchaseLocked}
+                        disabled={busy || listing?.purchaseLocked}
                       />
                       {copy.onDemand}
                     </span>
@@ -206,7 +206,7 @@ const ListingWizard = ({ copy, initial }: ListingWizardProps) => {
                     name="addressId"
                     value={draft.addressId ?? ""}
                     onChange={wizard.change}
-                    disabled={listing?.purchaseLocked}
+                    disabled={busy || listing?.purchaseLocked}
                     className="min-h-11 rounded-md border border-glass-border bg-bg-1 px-3"
                   >
                     <option value="">{copy.address}</option>
@@ -233,7 +233,7 @@ const ListingWizard = ({ copy, initial }: ListingWizardProps) => {
                     inputMode="decimal"
                     value={wizard.price}
                     onChange={wizard.changePrice}
-                    disabled={listing?.purchaseLocked}
+                    disabled={busy || listing?.purchaseLocked}
                   />
                 </label>
                 <label className="flex flex-col gap-2 text-ink-1">
@@ -242,7 +242,7 @@ const ListingWizard = ({ copy, initial }: ListingWizardProps) => {
                     name="currency"
                     value={draft.currency}
                     onChange={wizard.change}
-                    disabled={listing?.purchaseLocked}
+                    disabled={busy || listing?.purchaseLocked}
                     className="min-h-11 rounded-md border border-glass-border bg-bg-1 px-3"
                   >
                     {copy.currencies.map((currency) => (
@@ -302,7 +302,7 @@ const ListingWizard = ({ copy, initial }: ListingWizardProps) => {
                 variant="secondary"
                 onClick={wizard.save}
                 loading={busy}
-                disabled={listing?.purchaseLocked}
+                disabled={busy || listing?.purchaseLocked}
               >
                 {copy.save}
               </Button>

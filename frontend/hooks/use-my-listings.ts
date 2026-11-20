@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { apiFetch, type ApiResult } from "@/lib/api/client";
-import { LISTING_API } from "@/lib/constants";
+import { useRouter, usePathname } from "next/navigation";
+import { listingClient, ListingRequestError } from "@/lib/api/listings";
 import {
   LoadStatus,
+  ProblemCode,
   type ListingCopy,
   type SellerListing,
   type SellerListingPage,
@@ -15,48 +16,49 @@ const useMyListings = (copy: ListingCopy) => {
   const [cursor, setCursor] = useState<string | null>(null);
   const [editing, setEditing] = useState<SellerListing>();
   const [deactivating, setDeactivating] = useState<SellerListing>();
-  const accept = useCallback(
-    (result: ApiResult, append = false) => {
-      if (!result.ok) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const fail = useCallback(
+    (failure: unknown) => {
+      if (failure instanceof ListingRequestError) {
+        if (failure.status === 401) router.push(`/login?next=${encodeURIComponent(pathname)}`);
+        if (failure.code === ProblemCode.AccountSuspended) router.push("/suspended");
         setError(
-          result.status === 401
+          failure.status === 401
             ? copy.signIn
-            : result.status === 403
+            : failure.status === 403
               ? copy.forbidden
               : copy.failed,
         );
-        setStatus(LoadStatus.Failed);
-        return;
-      }
-      const data = result.body as SellerListingPage;
-      setItems((current) => (append ? [...current, ...data.items] : data.items));
-      setCursor(data.nextCursor);
-      setStatus(LoadStatus.Ready);
+      } else setError(copy.failed);
+      setStatus(LoadStatus.Failed);
     },
-    [copy],
+    [copy, router, pathname],
   );
+  const accept = useCallback((data: SellerListingPage, append = false) => {
+    setItems((current) => (append ? [...current, ...data.items] : data.items));
+    setCursor(data.nextCursor);
+    setStatus(LoadStatus.Ready);
+  }, []);
   const load = async (next?: string) => {
     try {
-      accept(await apiFetch(`${LISTING_API.mine}${next ? `?cursor=${next}` : ""}`), !!next);
-    } catch {
-      setError(copy.failed);
-      setStatus(LoadStatus.Failed);
+      accept(await listingClient.page(next), !!next);
+    } catch (failure) {
+      fail(failure);
     }
   };
   useEffect(() => {
     const controller = new AbortController();
-    apiFetch(LISTING_API.mine, { signal: controller.signal })
+    listingClient
+      .page(undefined, controller.signal)
       .then((result) => {
         if (!controller.signal.aborted) accept(result);
       })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          setError(copy.failed);
-          setStatus(LoadStatus.Failed);
-        }
+      .catch((failure: unknown) => {
+        if (!controller.signal.aborted) fail(failure);
       });
     return () => controller.abort();
-  }, [accept, copy]);
+  }, [accept, fail]);
   const retry = () => {
     setStatus(LoadStatus.Loading);
     setError("");
@@ -74,14 +76,11 @@ const useMyListings = (copy: ListingCopy) => {
   const deactivate = async () => {
     if (!deactivating) return;
     try {
-      const result = await apiFetch(`${LISTING_API.listings}/${deactivating.id}/deactivate`, {
-        method: "POST",
-      });
-      if (!result.ok) throw new Error();
+      await listingClient.deactivate(deactivating.id);
       close();
       await load();
-    } catch {
-      setError(copy.failed);
+    } catch (failure) {
+      fail(failure);
     }
   };
   return {

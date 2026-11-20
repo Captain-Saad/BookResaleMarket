@@ -5,6 +5,8 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import Badge from "@/components/ui/badge";
 import Button from "@/components/ui/button";
 import Drawer from "@/components/ui/drawer";
+import Input from "@/components/ui/input";
+import { SellerVerificationStatus } from "@/lib/types";
 import Select from "@/components/ui/select";
 import {
   apiFetch,
@@ -23,6 +25,7 @@ const canMock = () =>
 const TestConsole = () => {
   const [open, setOpen] = useState(false);
   const [mockStatus, setMockStatus] = useState<MockStatus>(() => (canMock() ? "starting" : "off"));
+  const [sellerEmail, setSellerEmail] = useState("");
   const [role, setRole] = useState<string>(DEV_ROLES[0].value);
   const [lastResult, setLastResult] = useState<ApiResult | null>(null);
   const requestIds = useSyncExternalStore(
@@ -90,6 +93,36 @@ const TestConsole = () => {
             <Select id="console-role" value={role} onValueChange={setRole} options={DEV_ROLES} />
             <Button variant="secondary" onClick={() => post("/api/v1/dev/session", { role })}>
               Switch role
+            </Button>
+          </section>
+
+          <section aria-labelledby="console-seller" className="flex flex-col gap-2">
+            <h3 id="console-seller" className="font-medium text-ink-1">
+              Seller verification
+            </h3>
+            <p className="text-ink-2">
+              Admin session required. The seller must start verification first.
+            </p>
+            <label htmlFor="console-seller-email" className="flex flex-col gap-2 text-ink-2">
+              Seller email
+              <Input
+                id="console-seller-email"
+                type="email"
+                value={sellerEmail}
+                onChange={(event) => setSellerEmail(event.target.value)}
+              />
+            </label>
+            <Button
+              variant="secondary"
+              disabled={!sellerEmail}
+              onClick={() =>
+                post("/api/v1/dev/seller-verification", {
+                  email: sellerEmail,
+                  status: SellerVerificationStatus.Verified,
+                })
+              }
+            >
+              Mark seller verified
             </Button>
           </section>
 
