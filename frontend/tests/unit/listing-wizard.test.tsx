@@ -1,12 +1,19 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, expect, it } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import ListingWizard from "@/components/domain/listing-wizard";
-import { listingHandlers, resetMockListings } from "@/lib/api/mocks/listings";
-import { LISTING_COPY } from "@/lib/constants";
+import { listingHandlers, mockListing, resetMockListings } from "@/lib/api/mocks/listings";
+import type { ListingDraft } from "@/lib/types";
+import { API_BASE_URL, LISTING_API, LISTING_COPY } from "@/lib/constants";
 import { validIsbn } from "@/lib/listings";
 import { server } from "../utils/msw";
 import { axeViolations } from "../utils/axe";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => "/sell",
+}));
 
 beforeEach(() => {
   resetMockListings();
@@ -42,4 +49,55 @@ it("looks up an ISBN and saves a draft", async () => {
 it("has accessible initial fields", async () => {
   const { container } = render(<ListingWizard copy={LISTING_COPY} />);
   expect(await axeViolations(container)).toEqual([]);
+});
+
+it("autosaves incomplete drafts and patches the same listing after later edits", async () => {
+  let creates = 0;
+  let patches = 0;
+  const listing = mockListing();
+  server.use(
+    http.post<never, ListingDraft>(
+      `${API_BASE_URL}${LISTING_API.listings}`,
+      async ({ request }) => {
+        creates++;
+        return HttpResponse.json({ ...listing, ...(await request.json()) }, { status: 201 });
+      },
+    ),
+    http.patch<{ id: string }, ListingDraft & { version: number }>(
+      `${API_BASE_URL}${LISTING_API.listings}/:id`,
+      async ({ request, params }) => {
+        expect(params.id).toBe(listing.id);
+        patches++;
+        return HttpResponse.json({ ...listing, ...(await request.json()), version: 2 });
+      },
+    ),
+  );
+  render(<ListingWizard copy={LISTING_COPY} />);
+  const user = userEvent.setup();
+  await user.type(screen.getByLabelText(LISTING_COPY.titleLabel), "An unfinished draft");
+  await waitFor(() => expect(creates).toBe(1), { timeout: 3000 });
+  expect(await screen.findByRole("status")).toHaveTextContent(LISTING_COPY.saved);
+  await user.type(screen.getByLabelText(LISTING_COPY.author), "Author");
+  await waitFor(() => expect(patches).toBe(1), { timeout: 3000 });
+  expect(creates).toBe(1);
+});
+
+it("pauses failed autosave until another edit or explicit retry", async () => {
+  let attempts = 0;
+  server.use(
+    http.post(`${API_BASE_URL}${LISTING_API.listings}`, () => {
+      attempts++;
+      return HttpResponse.json({ code: "storage_unavailable" }, { status: 503 });
+    }),
+  );
+  render(<ListingWizard copy={LISTING_COPY} />);
+  const user = userEvent.setup();
+  await user.type(screen.getByLabelText(LISTING_COPY.titleLabel), "Draft");
+  expect(await screen.findByRole("alert", {}, { timeout: 3000 })).toHaveTextContent(
+    LISTING_COPY.failed,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  expect(attempts).toBe(1);
+  await user.click(screen.getByRole("button", { name: LISTING_COPY.save }));
+  await waitFor(() => expect(attempts).toBe(2));
 });

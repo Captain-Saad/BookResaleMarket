@@ -1,14 +1,31 @@
-import { useState, useEffect, type ChangeEvent } from "react";
+import { useState, useEffect, useRef, useCallback, type ChangeEvent } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { listingClient, ListingRequestError } from "@/lib/api/listings";
 import { apiFetch } from "@/lib/api/client";
 import { EMPTY_LISTING_DRAFT, LISTING_API } from "@/lib/constants";
 import { listingDraft, normalizeIsbn, validIsbn, parsePrice } from "@/lib/listings";
-import type { IsbnMetadata, ListingCopy, ListingDraft, SellerListing } from "@/lib/types";
+import type { ListingCopy, ListingDraft, SellerListing } from "@/lib/types";
 
 const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
   const [draft, setDraft] = useState<ListingDraft>(() =>
     initial ? listingDraft(initial) : { ...EMPTY_LISTING_DRAFT },
   );
-  const [listing, setListing] = useState(initial);
+  const [listing, setListingState] = useState(initial);
+  const listingRef = useRef(initial);
+  const setListing = (value: SellerListing) => {
+    listingRef.current = value;
+    setListingState(value);
+  };
+  const router = useRouter();
+  const pathname = usePathname();
+  const queue = useRef<Promise<void>>(Promise.resolve());
+  const savedDraft = useRef(JSON.stringify(initial ? listingDraft(initial) : EMPTY_LISTING_DRAFT));
+  const [edited, setEdited] = useState(false);
+  const [autosavePaused, setAutosavePaused] = useState(false);
+  const latestDraft = useRef(draft);
+  useEffect(() => {
+    latestDraft.current = draft;
+  }, [draft]);
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -19,9 +36,10 @@ const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
   const [addresses, setAddresses] = useState<import("@/lib/types").Address[]>([]);
   useEffect(() => {
     let active = true;
-    apiFetch("/api/v1/me/addresses")
-      .then((result) => {
-        if (active && result.ok) setAddresses(result.body as import("@/lib/types").Address[]);
+    listingClient
+      .addresses()
+      .then((items) => {
+        if (active) setAddresses(items);
       })
       .catch(() => {});
     return () => {
@@ -33,6 +51,8 @@ const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
     setPrice(value);
     setDraft((current) => ({ ...current, priceMinor: parsePrice(value) }));
     setMessage("");
+    setEdited(true);
+    setAutosavePaused(false);
   };
 
   const change = (
@@ -44,6 +64,8 @@ const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
       [name]: (name === "isbn" || name === "addressId") && !value ? null : value,
     }));
     setMessage("");
+    setEdited(true);
+    setAutosavePaused(false);
   };
   const lookup = async () => {
     const isbn = normalizeIsbn(draft.isbn ?? "");
@@ -54,12 +76,7 @@ const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
     setBusy(true);
     setError("");
     try {
-      const result = await apiFetch(`${LISTING_API.isbn}/${isbn}`);
-      if (!result.ok) {
-        setError(copy.lookupFailed);
-        return;
-      }
-      const book = result.body as IsbnMetadata;
+      const book = await listingClient.lookup(isbn);
       if (!book.found) {
         setMessage(copy.lookupMissing);
         return;
@@ -70,6 +87,8 @@ const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
         title: book.title,
         author: book.author,
       }));
+      setEdited(true);
+      setAutosavePaused(false);
     } catch {
       setError(copy.lookupFailed);
     } finally {
@@ -96,32 +115,69 @@ const useListingWizard = (copy: ListingCopy, initial?: SellerListing) => {
     setError("");
     setStep((current) => Math.max(current - 1, 0));
   };
-  const save = async () => {
-    setBusy(true);
-    setError("");
-    setMessage("");
-    try {
-      const result = await apiFetch(
-        listing ? `${LISTING_API.listings}/${listing.id}` : LISTING_API.listings,
-        {
-          method: listing ? "PATCH" : "POST",
-          body: JSON.stringify({ ...draft, ...(listing && { version: listing.version }) }),
-        },
+  const reportFailure = useCallback(
+    (failure: unknown) => {
+      if (failure instanceof ListingRequestError) {
+        if (failure.status === 401) router.push(`/login?next=${encodeURIComponent(pathname)}`);
+        if (failure.code === "account_suspended") router.push("/suspended");
+        setError(
+          failure.code === "stale_listing"
+            ? copy.stale
+            : failure.code === "seller_not_verified"
+              ? copy.verifiedRequired
+              : copy.failed,
+        );
+      } else setError(copy.failed);
+    },
+    [copy, pathname, router],
+  );
+  const persist = useCallback(
+    (snapshot: ListingDraft) => {
+      const work = queue.current.then(async () => {
+        if (listingRef.current && JSON.stringify(snapshot) === savedDraft.current)
+          return listingRef.current;
+        setBusy(true);
+        setError("");
+        setMessage("");
+        try {
+          const saved = await listingClient.save(snapshot, listingRef.current);
+          listingRef.current = saved;
+          setListingState(saved);
+          savedDraft.current = JSON.stringify(snapshot);
+          if (JSON.stringify(latestDraft.current) === savedDraft.current) setMessage(copy.saved);
+          setAutosavePaused(false);
+          return saved;
+        } catch (failure) {
+          reportFailure(failure);
+          setAutosavePaused(true);
+        } finally {
+          setBusy(false);
+        }
+      });
+      queue.current = work.then(
+        () => undefined,
+        () => undefined,
       );
-      if (!result.ok) {
-        setError(copy.failed);
-        return;
-      }
-      const saved = result.body as SellerListing;
-      setListing(saved);
-      setMessage(copy.saved);
-      return saved;
-    } catch {
-      setError(copy.failed);
-    } finally {
-      setBusy(false);
-    }
-  };
+      return work;
+    },
+    [copy.saved, reportFailure],
+  );
+  const save = () => persist(draft);
+  useEffect(() => {
+    if (
+      !edited ||
+      busy ||
+      autosavePaused ||
+      listing?.purchaseLocked ||
+      JSON.stringify(draft) === savedDraft.current ||
+      (draft.isbn && !validIsbn(normalizeIsbn(draft.isbn)))
+    )
+      return;
+    const timer = setTimeout(() => {
+      void persist(draft);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [draft, edited, busy, autosavePaused, listing?.purchaseLocked, persist]);
   const upload = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = [...(event.target.files ?? [])];
     event.target.value = "";

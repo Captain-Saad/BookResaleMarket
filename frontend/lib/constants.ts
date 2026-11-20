@@ -476,6 +476,7 @@ export const SELLER_PANEL_COPY = {
 export const EMAIL_ALREADY_VERIFIED_MESSAGE = "Your profile is already verified.";
 
 export const LISTING_COPY = {
+  stale: "This listing changed in another tab. Reopen it from My Listings before saving again.",
   title: "Give your next chapter a new home",
   description:
     "List one physical copy. Describe its condition, add photos, and choose how it reaches its next reader.",
@@ -527,7 +528,6 @@ export const LISTING_COPY = {
   locked: "ISBN and condition are locked because this book has been purchasable.",
   purchased: "This book has been committed to a buyer. Its sale details and photos are locked.",
   verifiedRequired: "Verify your seller account before publishing a listing.",
-  stale: "This listing changed in another tab. Reload it before saving again.",
   myListings: "My listings",
   newListing: "List a book",
   empty: "Your next chapter starts here. Create your first listing.",

@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import MyListings from "@/components/domain/my-listings";
 import ListingWizard from "@/components/domain/listing-wizard";
 import { mockListing } from "@/lib/api/mocks/listings";
@@ -9,10 +9,16 @@ import { API_BASE_URL, LISTING_API, LISTING_COPY } from "@/lib/constants";
 import { parsePrice } from "@/lib/listings";
 import { server } from "../utils/msw";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => "/sell/listings",
+}));
+
 it("parses decimal prices without rounding away fractional minor units", () => {
   expect(parsePrice("12.34")).toBe(1234);
   expect(parsePrice("0.01")).toBe(1);
-  for (const input of ["0", "-1", "1.001", "1e2", "Infinity", "1000001"])
+  expect(parsePrice("1000001")).toBe(100000100);
+  for (const input of ["0", "-1", "1.001", "1e2", "Infinity", "90071992547410"])
     expect(parsePrice(input)).toBeNull();
 });
 it("shows the empty listing state", async () => {
