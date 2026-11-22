@@ -46,7 +46,7 @@ test.describe("landing page", () => {
 });
 
 const PLACEHOLDER_ROUTES = [
-  { path: "/books", heading: "Books" },
+  { path: "/books", heading: "Find your next chapter" },
   { path: "/login", heading: "Sign in" },
   { path: "/orders", heading: "Your orders" },
   { path: "/sell", heading: "Give your next chapter a new home" },

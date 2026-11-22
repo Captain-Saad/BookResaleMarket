@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
-import PlaceholderPage from "@/components/layout/placeholder-page";
-import { BACK_HOME_LINK, PLACEHOLDER_PAGES } from "@/lib/constants";
-
-const { title, description } = PLACEHOLDER_PAGES.books;
-
-export const metadata: Metadata = { title };
-
-const BooksPage = () => (
-  <PlaceholderPage title={title} description={description} homeLink={BACK_HOME_LINK} />
-);
-
+import BooksCatalog from "@/components/domain/books-catalog";
+import { CATALOG_COPY } from "@/lib/constants";
+export const metadata: Metadata = {
+  title: CATALOG_COPY.search,
+  description: CATALOG_COPY.description,
+};
+const BooksPage = () => <BooksCatalog copy={CATALOG_COPY} />;
 export default BooksPage;

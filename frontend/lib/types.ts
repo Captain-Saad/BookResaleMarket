@@ -119,7 +119,14 @@ export type HeroProps = {
 
 export type BookShelfProps = { shelf: Shelf; coverSizes: string };
 
-export type BookCoverProps = { coverId: number; title: string; author: string; sizes: string };
+export type BookCoverProps = {
+  coverId?: number;
+  label?: string;
+  src?: string | null;
+  title: string;
+  author: string;
+  sizes: string;
+};
 
 export type HowItWorksProps = { id: string; title: string; steps: readonly Step[] };
 
@@ -334,3 +341,19 @@ export type ListingCopy = typeof import("./constants").LISTING_COPY;
 export type ListingWizardProps = { copy: ListingCopy; initial?: SellerListing };
 
 export type MyListingsProps = { copy: ListingCopy };
+
+export type PublicBook = components["schemas"]["PublicListingSummary"];
+export type PublicBookDetail = components["schemas"]["PublicListingDetail"];
+export type PublicBookPage = components["schemas"]["PublicListingPage"];
+export type CatalogFilters = Omit<components["schemas"]["ListingSearchQuery"], "cursor" | "limit">;
+export type CatalogCopy = typeof import("@/lib/constants").CATALOG_COPY;
+export type BookCardProps = { book: PublicBook; copy: CatalogCopy };
+export type CatalogProps = { copy: CatalogCopy };
+export type CatalogFiltersProps = {
+  copy: CatalogCopy;
+  filters: CatalogFilters;
+  prefix: string;
+  error?: string;
+  onSubmit: import("react").FormEventHandler<HTMLFormElement>;
+  onReset: () => void;
+};

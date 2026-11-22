@@ -8,7 +8,7 @@ const renderCover = () =>
 describe("BookCover", () => {
   it("names the cover once and shows the image over a title card", () => {
     renderCover();
-    const cover = screen.getByRole("img", { name: "Cover of Frankenstein" });
+    const cover = screen.getByRole("img", { name: "Frankenstein" });
     const image = cover.querySelector("img");
     expect(image).toHaveAttribute("src", expect.stringContaining("covers.openlibrary.org"));
     expect(image).toHaveAttribute("alt", "");
@@ -18,13 +18,11 @@ describe("BookCover", () => {
 
   it("hides a failed image so the title card shows, without React state", () => {
     renderCover();
-    const cover = screen.getByRole("img", { name: "Cover of Frankenstein" });
+    const cover = screen.getByRole("img", { name: "Frankenstein" });
     const image = cover.querySelector("img");
     expect(image).not.toBeNull();
     fireEvent.error(image as HTMLImageElement);
     expect(image).not.toBeVisible();
-    expect(screen.getByRole("img", { name: "Cover of Frankenstein" })).toHaveTextContent(
-      "Frankenstein",
-    );
+    expect(screen.getByRole("img", { name: "Frankenstein" })).toHaveTextContent("Frankenstein");
   });
 });
