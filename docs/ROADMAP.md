@@ -63,7 +63,8 @@ Approximately **82 PRs** in total (down from 140). S0-00 and S0-01 are already d
 - **S3-03** BE FTS + trigram indexes, seed script (≥ 500 listings), search endpoint with filters and cursor pagination.
 - **S3-04** BE Detail endpoint, privacy rules (city/region only), availability freshness, performance test.
 - **S3-05** WIRE `/books` search, filters, URL state (`/books?q=…&condition=…`).
-- **S3-06** WIRE Detail, SEO metadata, JSON-LD.
+- **S3-06** WIRE Detail, live availability, SEO metadata and JSON-LD.
+- **S3-07** Public discovery and final quality: sitemap/robots, home search, optimized listing images and performance/accessibility gates (split from S3-06 to preserve the 30-file limit).
 
 **→ S3 GATE.**
 
