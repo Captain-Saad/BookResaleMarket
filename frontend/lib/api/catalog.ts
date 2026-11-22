@@ -1,5 +1,5 @@
 import { api } from "@/lib/api/client";
-import { PUBLIC_REFRESH_MS, PUBLIC_FRESHNESS_MS } from "@/lib/constants";
+import { PUBLIC_REFRESH_MS, PUBLIC_RETRY_MAX_MS, PUBLIC_FRESHNESS_MS } from "@/lib/constants";
 import type { ApiOutcome, CatalogFilters, PublicBookPage } from "@/lib/types";
 
 export class PublicRequestError extends Error {
@@ -25,6 +25,14 @@ export const catalogClient = {
     data(
       await api.GET("/api/v1/listings/{listing_id}", {
         params: { path: { listing_id } },
+        signal,
+        cache: "no-store",
+      }),
+    ),
+  sitemap: async (cursor?: string, signal?: AbortSignal) =>
+    data(
+      await api.GET("/api/v1/catalog/sitemap", {
+        params: { query: { cursor, limit: 10000 } },
         signal,
         cache: "no-store",
       }),
@@ -61,6 +69,7 @@ export const observePublic = <T>(
   let refresh: ReturnType<typeof setTimeout> | undefined;
   let expiry: ReturnType<typeof setTimeout> | undefined;
   let freshAt = previousFreshAt;
+  let retryDelay = PUBLIC_REFRESH_MS;
   const expire = () => {
     clearTimeout(expiry);
     expiry = setTimeout(
@@ -83,10 +92,12 @@ export const observePublic = <T>(
       const value = await load(active.signal);
       if (stopped || active.signal.aborted) return;
       if (Date.now() - started >= PUBLIC_FRESHNESS_MS) throw new PublicRequestError(503);
+      retryDelay = PUBLIC_REFRESH_MS;
       freshAt = started;
       next(value, started);
       expire();
     } catch (error) {
+      retryDelay = Math.min(retryDelay * 2, PUBLIC_RETRY_MAX_MS);
       if (!stopped) {
         clearTimeout(expiry);
         failed(error);
@@ -94,7 +105,7 @@ export const observePublic = <T>(
     } finally {
       clearTimeout(timeout);
       running = false;
-      if (!stopped) refresh = setTimeout(run, PUBLIC_REFRESH_MS);
+      if (!stopped) refresh = setTimeout(run, retryDelay);
     }
   };
   const foreground = () => {

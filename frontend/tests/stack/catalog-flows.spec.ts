@@ -1,3 +1,4 @@
+import { gzipSync } from "node:zlib";
 import { execFileSync } from "node:child_process";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
@@ -106,10 +107,18 @@ test("real catalog filters, history and reservation visibility", async ({
   expect(books.items).toHaveLength(2);
   expect(response.headers()["cache-control"]).toContain("no-store");
   expect(response.headers()["etag"]).toBeUndefined();
-  expect(JSON.stringify(books)).not.toMatch(/Private catalog|02108|addressId|sellerId|uploadToken/);
+  expect(JSON.stringify(books)).not.toMatch(
+    /Private catalog|postalCode|recipientName|line1|addressId|sellerId|uploadToken/,
+  );
   const html = await (await request.get(`/books?q=${encodeURIComponent(prefix)}`)).text();
   expect(html).toContain(`${prefix} on_demand`);
   expect(html).not.toContain("Private catalog street");
+  const optimized = await request.get(
+    `/_next/image?url=${encodeURIComponent(books.items.find((book) => book.id === ids.get("on_demand"))!.coverUrl!)}&w=640&q=75`,
+    { headers: { Accept: "image/avif,image/webp" } },
+  );
+  expect(optimized.status()).toBe(200);
+  expect(optimized.headers()["content-type"]).toMatch(/^image\/(avif|webp)/);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto(`/books?q=${encodeURIComponent(prefix)}`);
   const active = page.getByRole("link", { name: `View book: ${prefix} on_demand`, exact: true });
@@ -120,7 +129,9 @@ test("real catalog filters, history and reservation visibility", async ({
   const detailHtml = await (await request.get(detailUrl)).text();
   expect(detailHtml).toContain(`${prefix} on_demand`);
   expect(detailHtml).toContain('"@type":"Book"');
-  expect(detailHtml).not.toMatch(/Private catalog|02108|sellerId|addressId/);
+  expect(detailHtml).not.toMatch(
+    /Private catalog|postalCode|recipientName|line1|sellerId|addressId/,
+  );
   await active.click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(`${prefix} on_demand`);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
@@ -137,6 +148,28 @@ test("real catalog filters, history and reservation visibility", async ({
     priceCurrency: "USD",
     availability: "https://schema.org/InStock",
   });
+  expect(await page.evaluate(() => PerformanceObserver.supportedEntryTypes.includes("event"))).toBe(
+    true,
+  );
+  const performanceSession = await context.newCDPSession(page);
+  await performanceSession.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+  await page.evaluate(() => {
+    const durations: number[] = [];
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if ((entry as PerformanceEntry & { interactionId?: number }).interactionId) {
+          durations.push(entry.duration);
+        }
+      }
+    });
+    const options: PerformanceObserverInit & { durationThreshold: number } = {
+      type: "event",
+      buffered: false,
+      durationThreshold: 16,
+    };
+    observer.observe(options);
+    Object.assign(window, { bookloopInputDurations: durations, bookloopInputObserver: observer });
+  });
   await page.getByRole("button", { name: "Photo 2", exact: true }).click();
   const zoom = page.getByRole("button", {
     name: `Enlarge photo: ${prefix} on_demand`,
@@ -149,6 +182,29 @@ test("real catalog filters, history and reservation visibility", async ({
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(zoom).toBeFocused();
+  const inputDurations = await page.evaluate(async () => {
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
+    const measured = window as typeof window & {
+      bookloopInputDurations: number[];
+      bookloopInputObserver: PerformanceObserver;
+    };
+    for (const entry of measured.bookloopInputObserver.takeRecords()) {
+      if ((entry as PerformanceEntry & { interactionId?: number }).interactionId)
+        measured.bookloopInputDurations.push(entry.duration);
+    }
+    measured.bookloopInputObserver.disconnect();
+    return measured.bookloopInputDurations;
+  });
+  await performanceSession.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+  await performanceSession.detach();
+  await info.attach("detail-interaction-timing", {
+    body: JSON.stringify({ cpuSlowdown: 4, reportingThresholdMs: 16, durations: inputDurations }),
+    contentType: "application/json",
+  });
+  console.info("Detail interaction sample:", JSON.stringify(inputDurations));
+  expect.soft(Math.max(0, ...inputDurations)).toBeLessThan(200);
+
   await expect(page.getByText("Delivery estimate available at checkout")).toBeVisible();
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   for (const theme of ["dark", "light"] as const) {
@@ -166,6 +222,37 @@ test("real catalog filters, history and reservation visibility", async ({
     await page.screenshot({ path, fullPage: true });
     await info.attach(`detail-real-${theme}`, { path, contentType: "image/png" });
   }
+  await page.reload();
+  await page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === `/api/v1/listings/${ids.get("on_demand")}` &&
+      response.ok(),
+  );
+  const scripts = await page.evaluate(() => [
+    ...new Set(
+      performance
+        .getEntriesByType("resource")
+        .map((entry) => entry.name)
+        .filter(
+          (url) => new URL(url).origin === location.origin && new URL(url).pathname.endsWith(".js"),
+        ),
+    ),
+  ]);
+  expect(scripts.length).toBeGreaterThan(0);
+  const bundles = await Promise.all(
+    scripts.map(async (url) => {
+      const response = await request.get(url, { headers: { "Accept-Encoding": "identity" } });
+      expect(response.status()).toBe(200);
+      return { url, gzipBytes: gzipSync(await response.body()).byteLength };
+    }),
+  );
+  const gzipBytes = bundles.reduce((total, bundle) => total + bundle.gzipBytes, 0);
+  await info.attach("detail-route-js", {
+    body: JSON.stringify({ gzipBytes, bundles }, null, 2),
+    contentType: "application/json",
+  });
+  console.info("Detail gzip JavaScript bytes:", gzipBytes);
+  expect.soft(gzipBytes).toBeLessThan(180_000);
   await page.goBack();
   await expect(active).toBeVisible();
   const mobile = (page.viewportSize()?.width ?? 0) < 1024;
@@ -227,4 +314,16 @@ test("real catalog filters, history and reservation visibility", async ({
   await page.goto(`/books/${draft.id}`);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Page not found");
   await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(0);
+  const robots = await request.get("/robots.txt");
+  expect(robots.status()).toBe(200);
+  expect(await robots.text()).toContain("Disallow: /account");
+  expect(await robots.text()).toContain("Sitemap: http://localhost:3200/sitemap/start.xml");
+  const sitemap = await request.get("/sitemap/start.xml");
+  expect(sitemap.status()).toBe(200);
+  const xml = await sitemap.text();
+  expect(xml).toContain(`http://localhost:3200/books/${ids.get("on_demand")}`);
+  expect(xml).not.toContain(draft.id);
+  expect(xml).not.toMatch(/Private catalog|postalCode|recipientName|line1|sellerId|addressId/);
+  expect((await request.get(`/sitemap/${ids.get("warehouse")}.xml`)).status()).toBe(404);
+  expect((await request.get("/sitemap/invalid.xml")).status()).toBe(404);
 });

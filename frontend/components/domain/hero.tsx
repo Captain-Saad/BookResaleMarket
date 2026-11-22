@@ -1,10 +1,28 @@
 import Link from "next/link";
+import Input from "@/components/ui/input";
+import Button from "@/components/ui/button";
 import type { HeroProps } from "@/lib/types";
 
-const Hero = ({ title, subtitle, primaryCta, secondaryCta }: HeroProps) => (
+const Hero = ({ title, subtitle, primaryCta, secondaryCta, search }: HeroProps) => (
   <section className="glass glass--2 mx-auto flex mb-16 min-h-[calc(100dvh-15rem)] sm:min-h-[calc(100dvh-16rem)] md:mb-0 md:min-h-[calc(100dvh-12rem)] w-full max-w-page flex-col items-center justify-center gap-6 px-6 py-12 text-center sm:px-12 sm:py-16">
     <h1 className="font-display text-display font-semibold tracking-tight text-ink-1">{title}</h1>
     <p className="max-w-xl text-lg text-ink-2">{subtitle}</p>
+    <form action={search.href} method="get" className="flex w-full max-w-xl items-center gap-3">
+      <label htmlFor={search.id} className="sr-only">
+        {search.label}
+      </label>
+      <Input
+        id={search.id}
+        name={search.name}
+        type="search"
+        placeholder={search.placeholder}
+        maxLength={search.maxLength}
+        className="min-w-0 flex-1"
+      />
+      <Button type="submit" className="shrink-0">
+        {search.submit}
+      </Button>
+    </form>
     <div className="flex flex-wrap justify-center gap-3">
       <Link
         href={primaryCta.href}

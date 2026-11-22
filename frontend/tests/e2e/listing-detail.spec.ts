@@ -8,7 +8,7 @@ const PHOTO = Buffer.from(
 );
 const book = mockPublicDetail();
 const mock = async (page: Page, status: PublicBookDetail["status"] = "active") => {
-  await page.route("https://covers.openlibrary.org/**", (route) =>
+  await page.route("**/_next/image**", (route) =>
     route.fulfill({ body: PHOTO, contentType: "image/png" }),
   );
   await page.route("**/api/v1/listings**", (route) => {
@@ -34,7 +34,9 @@ test("reader opens a copy, switches photos and closes zoom with restored focus",
     "true",
   );
   const zoom = page.getByRole("button", { name: "Enlarge photo: Frankenstein", exact: true });
-  await expect(zoom.locator("img")).toHaveAttribute("src", book.photos[1]!.url);
+  expect(
+    new URL((await zoom.locator("img").getAttribute("src"))!, page.url()).searchParams.get("url"),
+  ).toBe(book.photos[1]!.url);
   await expect
     .poll(() =>
       zoom.locator("img").evaluate((element) => (element as HTMLImageElement).naturalWidth),

@@ -21,6 +21,7 @@ const BottomTabBar = ({ navItems, label }: BottomTabBarProps) => {
             <li key={id}>
               <Link
                 href={href}
+                prefetch={false}
                 aria-current={isActive ? "page" : undefined}
                 className={`flex min-h-14 flex-col items-center justify-center gap-1 text-xs font-medium ${isActive ? "text-ink-1" : "text-ink-3"}`}
               >

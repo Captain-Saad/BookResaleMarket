@@ -23,7 +23,10 @@ const BookCover = ({
   <div
     role="img"
     aria-label={label ?? title}
-    className={cn("relative aspect-[2/3] overflow-hidden rounded-sm shadow-lg", className)}
+    className={cn(
+      "relative aspect-[2/3] overflow-hidden rounded-sm shadow-lg [contain:paint]",
+      className,
+    )}
   >
     <div
       aria-hidden="true"
@@ -36,7 +39,6 @@ const BookCover = ({
       <Image
         key={src ?? coverId}
         src={src || `${OPEN_LIBRARY_COVER_URL}/${coverId}-L.jpg`}
-        unoptimized={!!src}
         alt=""
         fill
         sizes={sizes}

@@ -2,18 +2,31 @@ import type { Metadata } from "next";
 import BooksCatalog from "@/components/domain/books-catalog";
 import { catalogClient } from "@/lib/api/catalog";
 import { catalogFilters } from "@/lib/catalog";
-import { CATALOG_COPY, EMPTY_CATALOG_FILTERS, PUBLIC_FRESHNESS_MS } from "@/lib/constants";
+import {
+  CATALOG_COPY,
+  EMPTY_CATALOG_FILTERS,
+  PUBLIC_FRESHNESS_MS,
+  PUBLIC_SITE_URL,
+} from "@/lib/constants";
+import { catalogMetadata } from "@/lib/api/catalog-server";
 import type { CatalogFilters, CatalogPageProps } from "@/lib/types";
-export const metadata: Metadata = {
-  title: CATALOG_COPY.search,
-  description: CATALOG_COPY.description,
-};
-const BooksPage = async ({ searchParams }: CatalogPageProps) => {
+const catalogPageParams = (query: Record<string, string | string[] | undefined>) => {
   const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(await searchParams)) {
+  for (const [key, value] of Object.entries(query)) {
     const selected = Array.isArray(value) ? value[0] : value;
     if (selected !== undefined) params.set(key, selected);
   }
+  return params;
+};
+
+export const generateMetadata = async ({ searchParams }: CatalogPageProps): Promise<Metadata> =>
+  catalogMetadata(
+    catalogPageParams(await searchParams),
+    new URL(CATALOG_COPY.detailBase, PUBLIC_SITE_URL).toString(),
+    CATALOG_COPY,
+  );
+const BooksPage = async ({ searchParams }: CatalogPageProps) => {
+  const params = catalogPageParams(await searchParams);
   let filters: CatalogFilters = { ...EMPTY_CATALOG_FILTERS };
   let initialError = "";
   try {

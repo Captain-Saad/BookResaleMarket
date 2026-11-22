@@ -70,3 +70,27 @@ it("rejects an overdue result even when its timeout callback has not run", async
   expect(failed).toHaveBeenCalled();
   stop();
 });
+
+it("backs off failed reads and restores normal freshness polling after recovery", async () => {
+  vi.useFakeTimers();
+  const load = vi
+    .fn()
+    .mockRejectedValueOnce(new Error("outage"))
+    .mockRejectedValueOnce(new Error("outage"))
+    .mockResolvedValue(1);
+  const next = vi.fn();
+  const failed = vi.fn();
+  const stop = observePublic(load, next, failed);
+  await vi.advanceTimersByTimeAsync(0);
+  expect(load).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(PUBLIC_REFRESH_MS);
+  expect(load).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(PUBLIC_REFRESH_MS);
+  expect(load).toHaveBeenCalledTimes(2);
+  await vi.advanceTimersByTimeAsync(4 * PUBLIC_REFRESH_MS);
+  expect(load).toHaveBeenCalledTimes(3);
+  expect(next).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(PUBLIC_REFRESH_MS);
+  expect(load).toHaveBeenCalledTimes(4);
+  stop();
+});

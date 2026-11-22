@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import ListingDetail from "@/components/domain/listing-detail";
 import ListingOverview from "@/components/domain/listing-overview";
 import BookGallery from "@/components/domain/book-gallery";
@@ -48,20 +48,28 @@ for (const status of ["reserved", "sold"] as const) {
   });
 }
 
-it("switches gallery photos after an image error and returns focus after zoom closes", async () => {
+it("switches gallery photos after an image error and requests native zoom open and close", async () => {
   const book = mockPublicDetail();
-  render(<BookGallery book={book} copy={DETAIL_COPY} />);
+  const { container } = render(<BookGallery book={book} copy={DETAIL_COPY} />);
+  const dialog = container.querySelector("dialog")!;
+  dialog.showModal = vi.fn(() => dialog.setAttribute("open", ""));
+  dialog.close = vi.fn(() => dialog.removeAttribute("open"));
   const user = userEvent.setup();
   const zoom = screen.getByRole("button", { name: `${DETAIL_COPY.zoom}: ${book.title}` });
   fireEvent.error(zoom.querySelector("img")!);
   await user.click(screen.getByRole("button", { name: "Photo 2" }));
-  expect(zoom.querySelector("img")).toHaveAttribute("src", book.photos[1]!.url);
+  expect(
+    new URL(zoom.querySelector("img")!.getAttribute("src")!, window.location.href).searchParams.get(
+      "url",
+    ),
+  ).toBe(book.photos[1]!.url);
   expect(zoom.querySelector("img")).toBeVisible();
   expect(screen.getByRole("button", { name: "Photo 2" })).toHaveAttribute("aria-pressed", "true");
   await user.click(zoom);
   expect(await screen.findByRole("dialog")).toBeInTheDocument();
-  await user.keyboard("{Escape}");
-  await waitFor(() => expect(zoom).toHaveFocus());
+  expect(dialog.showModal).toHaveBeenCalledOnce();
+  await user.click(screen.getByRole("button", { name: DETAIL_COPY.close }));
+  expect(dialog.close).toHaveBeenCalledOnce();
 });
 
 it("shows a missing-copy message and can retry", async () => {

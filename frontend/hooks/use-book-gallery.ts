@@ -1,13 +1,15 @@
 import { useState } from "react";
+import useDialog from "@/hooks/use-dialog";
 import type { PublicBookDetail } from "@/lib/types";
 
 const useBookGallery = (book: PublicBookDetail) => {
   const [index, setIndex] = useState(0);
-  const [zoom, setZoom] = useState(false);
+  const { dialogRef, open, close } = useDialog();
   return {
     photo: book.photos[index] ?? book.photos[0],
-    zoom,
-    setZoom,
+    dialogRef,
+    open,
+    close,
     index,
     select: (value: number) => () => setIndex(value),
   };

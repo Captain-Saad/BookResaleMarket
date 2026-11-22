@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import BookShelf from "@/components/domain/book-shelf";
 import Hero from "@/components/domain/hero";
 import HowItWorks from "@/components/domain/how-it-works";
 import {
+  PUBLIC_SITE_URL,
+  ROUTES,
   COVER_SIZES,
   FEATURED_SHELVES,
   FEATURED_SHELVES_TITLE,
@@ -11,9 +14,14 @@ import {
   SECTION_IDS,
 } from "@/lib/constants";
 
+export const metadata: Metadata = {
+  alternates: { canonical: new URL(ROUTES.home, PUBLIC_SITE_URL).toString() },
+};
+
 const HomePage = () => (
   <main className="flex flex-1 flex-col gap-16 px-4 py-12 sm:gap-24 sm:py-16">
     <Hero
+      search={HERO.search}
       title={HERO.title}
       subtitle={HERO.subtitle}
       primaryCta={HERO.primaryCta}

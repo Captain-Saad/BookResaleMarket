@@ -111,7 +111,7 @@ test.describe("navigation", () => {
       const response = await page.goto(path);
       expect(response?.status()).toBe(200);
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(heading);
-      await expect(page).toHaveTitle(`${heading} · BookLoop`);
+      await expect(page).toHaveTitle(`${path === "/books" ? "Search books" : heading} · BookLoop`);
       const results = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
         .analyze();
@@ -123,4 +123,14 @@ test.describe("navigation", () => {
 test("the dev test console is not part of production builds", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("button", { name: "Open dev test console" })).toHaveCount(0);
+});
+
+test("home search submits a shareable catalog URL without client form logic", async ({ page }) => {
+  await page.goto("/");
+  await page
+    .getByRole("searchbox", { name: "Search books by title or author" })
+    .fill("Frankenstein");
+  await page.getByRole("button", { name: "Search books", exact: true }).click();
+  await expect(page).toHaveURL(/\/books\?q=Frankenstein$/);
+  await expect(page.getByLabel("Title, author or words from a book")).toHaveValue("Frankenstein");
 });

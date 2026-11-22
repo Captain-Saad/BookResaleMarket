@@ -75,7 +75,16 @@ export const HERO = {
   title: "Buy and sell used books",
   subtitle:
     "Every book's condition is verified, and your payment is held until you confirm it arrived.",
-  primaryCta: { href: `#${SECTION_IDS.shelves}`, label: "Browse books" },
+  primaryCta: { href: ROUTES.books, label: "Browse books" },
+  search: {
+    href: ROUTES.books,
+    id: "home-book-search",
+    name: "q",
+    label: "Search books by title or author",
+    placeholder: "Title or author",
+    submit: "Search books",
+    maxLength: 200,
+  },
   secondaryCta: { href: `#${SECTION_IDS.howItWorks}`, label: "How it works" },
 } as const;
 
@@ -674,7 +683,26 @@ export const DETAIL_COPY = {
 } as const;
 
 export const PUBLIC_REFRESH_MS = 1000;
+export const PUBLIC_RETRY_MAX_MS = 30_000;
 export const PUBLIC_FRESHNESS_MS = 2000;
 
 export const PUBLIC_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const SCHEMA_ORG = "https://schema.org";
+
+export const SITEMAP_START_ID = "start";
+export const SITEMAP_BASE_PATHS = [ROUTES.home, ROUTES.books] as const;
+export const ROBOTS_PRIVATE_PATHS = [
+  "/account",
+  "/orders",
+  "/sell",
+  "/warehouse",
+  "/courier",
+  "/admin",
+  "/login",
+  "/register",
+  "/verify-email",
+  "/forgot-password",
+  "/reset-password",
+  "/api/",
+] as const;
+export const PUBLIC_UUID_PATTERN = /^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i;

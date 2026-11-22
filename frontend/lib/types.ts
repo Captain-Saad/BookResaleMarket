@@ -111,6 +111,7 @@ export type SiteHeaderProps = {
 export type SiteFooterProps = { siteName: string; description: string };
 
 export type HeroProps = {
+  search: typeof import("@/lib/constants").HERO.search;
   title: string;
   subtitle: string;
   primaryCta: NavLink;
@@ -389,3 +390,6 @@ export type BookGalleryProps = ListingOverviewProps;
 export type PurchaseCardProps = ListingOverviewProps & { compact?: boolean };
 
 export type PublicBookPageProps = { params: Promise<{ id: string }> };
+
+export type PublicSitemapPage = components["schemas"]["PublicSitemapPage"];
+export type SitemapProps = { id: Promise<string> };
