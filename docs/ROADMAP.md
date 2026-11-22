@@ -57,6 +57,7 @@ Approximately **82 PRs** in total (down from 140). S0-00 and S0-01 are already d
 **→ S2 GATE.**
 
 ## S3 — Search and listing detail (F3 + M3)
+- **S3-00** Contract-first public search/detail schemas and generated types before mocked frontend work. Public responses are whitelisted separately from seller data.
 - **S3-01** FE BookCard, condition/fulfillment badges, the `/books` page listing every book with search and filters built in (rail and mobile sheet), skeletons (mock).
 - **S3-02** FE Listing detail: gallery, purchase card, sticky mobile bar (mock).
 - **S3-03** BE FTS + trigram indexes, seed script (≥ 500 listings), search endpoint with filters and cursor pagination.
