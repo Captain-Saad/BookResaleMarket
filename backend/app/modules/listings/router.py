@@ -25,6 +25,7 @@ from app.modules.listings.schemas import (
     PhotoUploadResponse,
     PublicListingDetail,
     PublicListingPage,
+    PublicSitemapPage,
 )
 from app.modules.listings.service import lookup_book
 
@@ -264,3 +265,13 @@ async def public_listing_photo(
 ) -> Response:
     data = await service.read_public_photo(db, listing_id, photo_id, storage)
     return Response(data, media_type="image/jpeg", headers={"Cache-Control": "private, no-store"})
+
+
+@router.get(
+    "/catalog/sitemap",
+    dependencies=[Depends(public), Depends(rate_limit_by_ip("public-sitemap", 60, 60))],
+)
+async def public_catalog_sitemap(
+    db: DbDep, cursor: UUID | None = None, limit: Annotated[int, Query(ge=1, le=10_000)] = 10_000
+) -> PublicSitemapPage:
+    return await service.sitemap_public(db, cursor, limit)

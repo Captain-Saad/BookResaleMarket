@@ -87,3 +87,47 @@ def test_unhandled_errors_hide_internals(failing_client: TestClient) -> None:
     assert body["code"] == "internal_error"
     assert "hunter2" not in response.text
     assert response.headers.get_list("x-request-id") == [body["request_id"]]
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "(EAUTHQUERY) authentication query failed: connection to database not available",
+        "(ECIRCUITBREAKER) upstream unavailable",
+    ],
+)
+def test_pooler_outage_is_safe_503(message: str) -> None:
+    from sqlalchemy.exc import InternalError
+
+    from app.core.deps import get_db
+
+    app = _app_with_failing_routes()
+
+    async def unavailable_database() -> None:
+        raise InternalError(None, None, RuntimeError(message + " secret-password"))
+
+    app.dependency_overrides[get_db] = unavailable_database
+    with TestClient(app) as client:
+        response = client.get("/api/v1/listings")
+    assert response.status_code == 503
+    assert response.json()["code"] == "database_unavailable"
+    assert response.json()["request_id"] == response.headers["x-request-id"]
+    assert response.headers["cache-control"] == "no-store"
+    assert "secret-password" not in response.text
+    assert "EAUTHQUERY" not in response.text
+
+
+def test_sql_programming_errors_are_not_reported_as_outages() -> None:
+    from sqlalchemy.exc import ProgrammingError
+
+    app = _app_with_failing_routes()
+
+    @app.get("/test/sql-bug")
+    async def sql_bug() -> None:
+        raise ProgrammingError(None, None, RuntimeError("invalid SQL secret-password"))
+
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.get("/test/sql-bug")
+    assert response.status_code == 500
+    assert response.json()["code"] == "internal_error"
+    assert "secret-password" not in response.text

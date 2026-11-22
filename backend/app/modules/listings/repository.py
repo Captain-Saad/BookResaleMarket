@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Nullable, Row, Select, and_, func, or_, select
@@ -119,3 +120,12 @@ async def public_photos(db: AsyncSession, ids: list[UUID]) -> list[ListingPhoto]
             .order_by(ListingPhoto.position, ListingPhoto.id)
         )
     )
+
+
+async def public_sitemap(
+    db: AsyncSession, cursor: UUID | None, limit: int
+) -> Sequence[Row[UUID, datetime]]:
+    query = public_query(detail=True).with_only_columns(Listing.id, Listing.updated_at)
+    if cursor is not None:
+        query = query.where(Listing.id < cursor)
+    return (await db.execute(query.order_by(Listing.id.desc()).limit(limit + 1))).all()

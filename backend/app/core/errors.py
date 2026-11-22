@@ -8,6 +8,8 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import TimeoutError as DatabaseTimeoutError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.status import HTTP_422_UNPROCESSABLE_CONTENT
 
@@ -152,7 +154,26 @@ async def _unhandled_error(request: Request, exc: Exception) -> JSONResponse:
     return problem_response(request, status=HTTPStatus.INTERNAL_SERVER_ERROR, code="internal_error")
 
 
+async def _database_error(request: Request, exc: Exception) -> JSONResponse:
+    unavailable = isinstance(exc, DatabaseTimeoutError)
+    if isinstance(exc, DBAPIError):
+        state = str(getattr(exc.orig, "sqlstate", ""))
+        unavailable = (
+            exc.connection_invalidated
+            or state.startswith("08")
+            or state in {"53300", "57P01", "57P02", "57P03"}
+            or "(EAUTHQUERY)" in str(exc.orig)
+            or "(ECIRCUITBREAKER)" in str(exc.orig)
+        )
+    if not unavailable:
+        return await _unhandled_error(request, exc)
+    logger.warning("database unavailable", request_id=getattr(request.state, "request_id", None))
+    return problem_response(request, status=503, code="database_unavailable")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
+    app.add_exception_handler(DBAPIError, _database_error)
+    app.add_exception_handler(DatabaseTimeoutError, _database_error)
     app.add_exception_handler(AppError, _app_error)
     app.add_exception_handler(StarletteHTTPException, _http_error)
     app.add_exception_handler(RequestValidationError, _validation_error)

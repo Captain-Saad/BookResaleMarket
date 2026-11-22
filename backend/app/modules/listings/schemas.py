@@ -219,3 +219,16 @@ CONTRACT_MODELS += (
     PublicListingPage,
     ListingSearchQuery,
 )
+
+
+class PublicSitemapEntry(ApiModel):
+    id: UUID
+    updated_at: datetime
+
+
+class PublicSitemapPage(ApiModel):
+    items: list[PublicSitemapEntry]
+    next_cursor: UUID | None
+
+
+CONTRACT_MODELS += (PublicSitemapEntry, PublicSitemapPage)

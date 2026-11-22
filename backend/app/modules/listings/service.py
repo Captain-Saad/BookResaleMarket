@@ -53,6 +53,8 @@ from app.modules.listings.schemas import (
     PublicListingStatus,
     PublicListingSummary,
     PublicLocation,
+    PublicSitemapEntry,
+    PublicSitemapPage,
 )
 
 
@@ -688,3 +690,12 @@ async def simulate_reservation(db: AsyncSession, clock: Clock, listing_id: UUID)
     )
     await db.commit()
     return reserved is not None
+
+
+async def sitemap_public(db: AsyncSession, cursor: UUID | None, limit: int) -> PublicSitemapPage:
+    rows = await repository.public_sitemap(db, cursor, limit)
+    visible = rows[:limit]
+    return PublicSitemapPage(
+        items=[PublicSitemapEntry(id=id_, updated_at=modified) for id_, modified in visible],
+        next_cursor=visible[-1][0] if len(rows) > limit else None,
+    )

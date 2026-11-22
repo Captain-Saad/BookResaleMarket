@@ -174,6 +174,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/catalog/sitemap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Catalog Sitemap */
+        get: operations["public_catalog_sitemap_api_v1_catalog_sitemap_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dev/clock/advance": {
         parameters: {
             query?: never;
@@ -1092,6 +1109,26 @@ export interface components {
             /** Region */
             region: string;
         };
+        /** PublicSitemapEntry */
+        PublicSitemapEntry: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+        };
+        /** PublicSitemapPage */
+        PublicSitemapPage: {
+            /** Items */
+            items: components["schemas"]["PublicSitemapEntry"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
         /** ReadyResponse */
         ReadyResponse: {
             /**
@@ -1495,6 +1532,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_catalog_sitemap_api_v1_catalog_sitemap_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicSitemapPage"];
+                };
             };
             /** @description Validation Error */
             422: {
