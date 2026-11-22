@@ -8,8 +8,9 @@ import Input from "@/components/ui/input";
 import useCatalog from "@/hooks/use-catalog";
 import { LoadStatus, type CatalogProps } from "@/lib/types";
 
-const BooksCatalog = ({ copy }: CatalogProps) => {
-  const catalog = useCatalog(copy);
+const BooksCatalog = (props: CatalogProps) => {
+  const { copy } = props;
+  const catalog = useCatalog(props);
   return (
     <main className="flex-1 px-4 py-8 sm:py-12">
       <div className="mx-auto flex w-full max-w-page flex-col gap-8">
@@ -78,7 +79,10 @@ const BooksCatalog = ({ copy }: CatalogProps) => {
                 <p role="status" className="mb-4 text-ink-2">
                   {copy.loading}
                 </p>
-                <ul aria-hidden="true" className="grid grid-cols-2 gap-4 xl:grid-cols-3">
+                <ul
+                  aria-hidden="true"
+                  className="grid grid-cols-1 gap-4 min-[380px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
+                >
                   {Array.from({ length: 6 }, (_, index) => (
                     <li
                       key={index}
@@ -98,7 +102,7 @@ const BooksCatalog = ({ copy }: CatalogProps) => {
               </p>
             ) : (
               <>
-                <ul className="grid grid-cols-2 gap-4 xl:grid-cols-3">
+                <ul className="grid grid-cols-1 gap-4 min-[380px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                   {catalog.items.map((book) => (
                     <li key={book.id} className="min-w-0">
                       <BookCard book={book} copy={copy} />

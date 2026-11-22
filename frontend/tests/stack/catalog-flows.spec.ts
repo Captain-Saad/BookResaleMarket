@@ -1,0 +1,153 @@
+import { execFileSync } from "node:child_process";
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test } from "@playwright/test";
+import type { PublicBookPage } from "@/lib/types";
+
+const API = "http://localhost:8010/api/v1";
+const DATABASE_URL =
+  process.env.E2E_DATABASE_URL ?? "postgresql://postgres:postgres@localhost:55432/bookloop";
+const PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAwAAAASCAIAAADgy6hbAAAAGUlEQVR4nGNkYPjPQAgwEVQxqmhUEZUVAQDF9QEjE2IuhwAAAABJRU5ErkJggg==",
+  "base64",
+);
+const cli = (module: string, ...args: string[]) =>
+  execFileSync("uv", ["run", "python", "-m", module, ...args], {
+    cwd: "../backend",
+    env: {
+      ...process.env,
+      BOOKLOOP_ENV: "test",
+      BOOKLOOP_DATABASE_URL: DATABASE_URL,
+      BOOKLOOP_DATABASE_DIRECT_URL: DATABASE_URL,
+    },
+  });
+
+test("real catalog filters, history and reservation visibility", async ({
+  page,
+  context,
+}, info) => {
+  test.setTimeout(120_000);
+  const prefix = `Catalog ${Date.now()} ${Math.random().toString(36).slice(2)}`;
+  const email = `${prefix.replaceAll(" ", "-").toLowerCase()}@example.com`;
+  const request = context.request;
+  expect(
+    (
+      await request.post(`${API}/auth/register`, {
+        data: { email, password: "a-good-password", displayName: "Catalog seller" },
+      })
+    ).status(),
+  ).toBe(202);
+  expect(
+    (
+      await request.post(`${API}/auth/login`, { data: { email, password: "a-good-password" } })
+    ).status(),
+  ).toBe(200);
+  expect((await request.post(`${API}/me/roles/seller`)).status()).toBe(200);
+  expect((await request.post(`${API}/me/seller-verification`)).status()).toBe(200);
+  cli("scripts.grant_role", email, "admin");
+  expect(
+    (
+      await request.post(`${API}/dev/seller-verification`, { data: { email, status: "verified" } })
+    ).status(),
+  ).toBe(200);
+  const address = await (
+    await request.post(`${API}/me/addresses`, {
+      data: {
+        recipientName: "Private catalog recipient",
+        line1: "Private catalog street",
+        postalCode: "02108",
+        city: "Boston",
+        region: "MA",
+        country: "US",
+      },
+    })
+  ).json();
+  const ids = new Map<string, string>();
+  for (const fulfillment of ["on_demand", "warehouse"] as const) {
+    const listing = await (
+      await request.post(`${API}/listings`, {
+        data: {
+          title: `${prefix} ${fulfillment}`,
+          author: "Catalog author",
+          condition: "good",
+          fulfillment,
+          currency: "USD",
+          priceMinor: 1234,
+          addressId: address.id,
+        },
+      })
+    ).json();
+    ids.set(fulfillment, listing.id);
+    const ticket = await (
+      await request.post(`${API}/listings/${listing.id}/photos/upload-url`, {
+        data: { contentType: "image/png", sizeBytes: PNG.length },
+      })
+    ).json();
+    expect(
+      (
+        await request.put(ticket.uploadUrl, { data: PNG, headers: { "Content-Type": "image/png" } })
+      ).status(),
+    ).toBe(204);
+    expect(
+      (
+        await request.post(`${API}/listings/${listing.id}/photos/complete`, {
+          data: { photoId: ticket.photoId },
+        })
+      ).status(),
+    ).toBe(200);
+    expect((await request.post(`${API}/listings/${listing.id}/publish`)).status()).toBe(200);
+  }
+  const response = await request.get(`${API}/listings?q=${encodeURIComponent(prefix)}`);
+  const books: PublicBookPage = await response.json();
+  expect(books.items).toHaveLength(2);
+  expect(response.headers()["cache-control"]).toContain("no-store");
+  expect(response.headers()["etag"]).toBeUndefined();
+  expect(JSON.stringify(books)).not.toMatch(/Private catalog|02108|addressId|sellerId|uploadToken/);
+  const html = await (await request.get(`/books?q=${encodeURIComponent(prefix)}`)).text();
+  expect(html).toContain(`${prefix} on_demand`);
+  expect(html).not.toContain("Private catalog street");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto(`/books?q=${encodeURIComponent(prefix)}`);
+  const active = page.getByRole("link", { name: `View book: ${prefix} on_demand`, exact: true });
+  const incoming = page.getByRole("link", { name: `View book: ${prefix} warehouse`, exact: true });
+  await expect(active).toBeVisible();
+  await expect(incoming).toBeVisible();
+  const mobile = (page.viewportSize()?.width ?? 0) < 1024;
+  if (mobile) await page.getByRole("button", { name: "Filters", exact: true }).click();
+  const filters = mobile ? page.getByRole("dialog") : page.locator("aside");
+  await filters
+    .getByRole("combobox", { name: "Fulfillment", exact: true })
+    .selectOption("warehouse");
+  await filters.getByRole("combobox", { name: "Currency", exact: true }).selectOption("USD");
+  await filters.getByLabel("Maximum price").fill("15.00");
+  await filters.getByRole("button", { name: "Apply filters" }).click();
+  await expect(page).toHaveURL(/fulfillment=warehouse/);
+  await expect(active).toHaveCount(0);
+  await expect(incoming).toBeVisible();
+  await page.reload();
+  await expect(incoming).toBeVisible();
+  await expect(active).toHaveCount(0);
+  await page.goBack();
+  await expect(active).toBeVisible();
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  for (const theme of ["dark", "light"] as const) {
+    await page.evaluate((value) => {
+      document.documentElement.dataset.theme = value;
+    }, theme);
+    expect(
+      (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag22aa"]).analyze())
+        .violations,
+    ).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    const path = info.outputPath(`catalog-real-${theme}.png`);
+    await page.screenshot({ path, fullPage: true });
+    await info.attach(`catalog-real-${theme}`, { path, contentType: "image/png" });
+  }
+  cli("scripts.reserve_listing", ids.get("on_demand")!);
+  await expect(active).toHaveCount(0, { timeout: 2500 });
+  await expect(incoming).toBeVisible();
+  const reserved = await request.get(`${API}/listings/${ids.get("on_demand")}`);
+  expect(reserved.status()).toBe(200);
+  expect((await reserved.json()).available).toBe(false);
+});

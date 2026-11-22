@@ -1,111 +1,99 @@
 import { useEffect, useState, useRef, type FormEvent } from "react";
-import { apiFetch } from "@/lib/api/client";
-import { CATALOG_API, EMPTY_CATALOG_FILTERS } from "@/lib/constants";
-import { catalogForm, catalogParams } from "@/lib/catalog";
-import {
-  LoadStatus,
-  type CatalogCopy,
-  type CatalogFilters,
-  type PublicBook,
-  type PublicBookPage,
-} from "@/lib/types";
+import { catalogClient, observePublic } from "@/lib/api/catalog";
+import { EMPTY_CATALOG_FILTERS } from "@/lib/constants";
+import { catalogFilters, catalogForm, catalogParams } from "@/lib/catalog";
+import { LoadStatus, type CatalogProps, type CatalogFilters } from "@/lib/types";
 
-const useCatalog = (copy: CatalogCopy) => {
-  const [filters, setFilters] = useState<CatalogFilters>({ ...EMPTY_CATALOG_FILTERS });
-  const [items, setItems] = useState<PublicBook[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [status, setStatus] = useState(LoadStatus.Loading);
-  const [error, setError] = useState("");
+const useCatalog = ({
+  copy,
+  initialFilters = EMPTY_CATALOG_FILTERS,
+  initial,
+  initialError = "",
+  syncUrl = false,
+}: CatalogProps) => {
+  const freshAt = useRef(0);
+  const [filters, setFilters] = useState<CatalogFilters>(initialFilters);
+  const [page, setPage] = useState(initial);
+  const [status, setStatus] = useState(initial ? LoadStatus.Ready : LoadStatus.Loading);
+  const [error, setError] = useState(initialError);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [moreBusy, setMoreBusy] = useState(false);
-  const moreRequest = useRef<AbortController | null>(null);
+  const [pages, setPages] = useState(1);
   const [attempt, setAttempt] = useState(0);
+  useEffect(
+    () =>
+      observePublic(
+        (signal) => catalogClient.pages(filters, pages, signal),
+        (result, started) => {
+          freshAt.current = started;
+          setPage(result);
+          setStatus(LoadStatus.Ready);
+          setMoreBusy(false);
+          setError((current) => (current === copy.failed ? "" : current));
+        },
+        () => {
+          setStatus(LoadStatus.Failed);
+          setMoreBusy(false);
+          setError(copy.failed);
+        },
+        freshAt.current,
+      ),
+    [filters, pages, attempt, copy.failed],
+  );
   useEffect(() => {
-    const controller = new AbortController();
-    apiFetch(`${CATALOG_API}?${catalogParams(filters)}`, {
-      signal: controller.signal,
-      cache: "no-store",
-    })
-      .then((result) => {
-        if (controller.signal.aborted) return;
-        if (!result.ok) {
-          setStatus(LoadStatus.Failed);
-          setError(copy.failed);
-          return;
-        }
-        const page = result.body as PublicBookPage;
-        setItems(page.items);
-        setCursor(page.nextCursor);
-        setStatus(LoadStatus.Ready);
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          setError(copy.failed);
-          setStatus(LoadStatus.Failed);
-        }
-      });
-    return () => {
-      controller.abort();
-      moreRequest.current?.abort();
+    if (!syncUrl) return;
+    const restore = () => {
+      freshAt.current = 0;
+      try {
+        setFilters(catalogFilters(new URLSearchParams(window.location.search)));
+        setError("");
+        setStatus(LoadStatus.Loading);
+        setPages(1);
+        setMoreBusy(false);
+      } catch {
+        setError(copy.invalidFilters);
+        setStatus(LoadStatus.Failed);
+      }
     };
-  }, [filters, attempt, copy.failed]);
+    window.addEventListener("popstate", restore);
+    return () => window.removeEventListener("popstate", restore);
+  }, [syncUrl, copy.invalidFilters]);
+  const apply = (next: CatalogFilters) => {
+    freshAt.current = 0;
+    setError("");
+    setStatus(LoadStatus.Loading);
+    setMoreBusy(false);
+    setPages(1);
+    setFilters(next);
+    setMobileOpen(false);
+    if (syncUrl) {
+      const query = catalogParams(next).toString();
+      window.history.pushState(null, "", `${copy.detailBase}${query ? `?${query}` : ""}`);
+    }
+  };
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
-      const next = catalogForm(event.currentTarget, filters);
-      moreRequest.current?.abort();
-      setMoreBusy(false);
-      setError("");
-      setStatus(LoadStatus.Loading);
-      setFilters(next);
-      setMobileOpen(false);
+      apply(catalogForm(event.currentTarget, filters));
     } catch {
       setError(copy.invalidFilters);
     }
   };
   const retry = () => {
+    freshAt.current = 0;
     setError("");
     setStatus(LoadStatus.Loading);
     setAttempt((value) => value + 1);
   };
-  const reset = () => {
-    moreRequest.current?.abort();
-    setMoreBusy(false);
-    setError("");
-    setStatus(LoadStatus.Loading);
-    setFilters({ ...EMPTY_CATALOG_FILTERS });
-    setMobileOpen(false);
-  };
-  const more = async () => {
-    if (!cursor || moreBusy) return;
-    const controller = new AbortController();
-    moreRequest.current = controller;
+  const more = () => {
+    if (!page?.nextCursor || moreBusy) return;
     setMoreBusy(true);
-    try {
-      const result = await apiFetch(`${CATALOG_API}?${catalogParams(filters, cursor)}`, {
-        signal: controller.signal,
-        cache: "no-store",
-      });
-      if (controller.signal.aborted) return;
-      if (!result.ok) throw new Error();
-      const page = result.body as PublicBookPage;
-      setItems((current) => [
-        ...new Map([...current, ...page.items].map((item) => [item.id, item])).values(),
-      ]);
-      setCursor(page.nextCursor);
-    } catch {
-      if (!controller.signal.aborted) setError(copy.failed);
-    } finally {
-      if (moreRequest.current === controller) {
-        moreRequest.current = null;
-        setMoreBusy(false);
-      }
-    }
+    setPages((count) => count + 1);
   };
   return {
     filters,
-    items,
-    cursor,
+    items: page?.items ?? [],
+    cursor: page?.nextCursor,
     status,
     error,
     mobileOpen,
@@ -113,7 +101,7 @@ const useCatalog = (copy: CatalogCopy) => {
     moreBusy,
     submit,
     retry,
-    reset,
+    reset: () => apply({ ...EMPTY_CATALOG_FILTERS }),
     more,
   };
 };

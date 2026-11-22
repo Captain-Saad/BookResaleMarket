@@ -224,7 +224,7 @@ def photo_urls(result: ListingResponse, request: Request) -> ListingResponse:
 
 
 @router.get(
-    "/listings", dependencies=[Depends(public), Depends(rate_limit_by_ip("public-search", 240, 60))]
+    "/listings", dependencies=[Depends(public), Depends(rate_limit_by_ip("public-search", 600, 60))]
 )
 async def search_listings(
     request: Request, db: DbDep, filters: Annotated[ListingSearchQuery, Query()]

@@ -2,8 +2,12 @@ import { CATALOG_COPY, EMPTY_CATALOG_FILTERS } from "@/lib/constants";
 import { normalizeIsbn, validIsbn } from "@/lib/listings";
 import type { CatalogFilters } from "@/lib/types";
 
-const option = <T extends string>(values: readonly T[], value: string | null): T | null =>
-  values.find((item) => item === value) ?? null;
+const option = <T extends string>(values: readonly T[], value: string | null): T | null => {
+  if (!value) return null;
+  const found = values.find((item) => item === value);
+  if (!found) throw new RangeError();
+  return found;
+};
 const price = (value: string | null): number | null => {
   if (!value) return null;
   if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value))) throw new RangeError();
@@ -17,6 +21,11 @@ export const catalogParams = (filters: CatalogFilters, cursor?: string) => {
   return params;
 };
 export const catalogFilters = (params: URLSearchParams): CatalogFilters => {
+  for (const name of ["q", "author"] as const) {
+    const value = params.get(name);
+    if (value && (value.length > 200 || value.includes("\0"))) throw new RangeError();
+  }
+  if ((params.get("isbn")?.length ?? 0) > 32) throw new RangeError();
   const filters = {
     ...EMPTY_CATALOG_FILTERS,
     q: params.get("q")?.trim() || null,

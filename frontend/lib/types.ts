@@ -350,7 +350,16 @@ export type PublicBookPage = components["schemas"]["PublicListingPage"];
 export type CatalogFilters = Omit<components["schemas"]["ListingSearchQuery"], "cursor" | "limit">;
 export type CatalogCopy = typeof import("@/lib/constants").CATALOG_COPY;
 export type BookCardProps = { book: PublicBook; copy: CatalogCopy };
-export type CatalogProps = { copy: CatalogCopy };
+export type CatalogProps = {
+  copy: CatalogCopy;
+  initialFilters?: CatalogFilters;
+  initial?: PublicBookPage;
+  initialError?: string;
+  syncUrl?: boolean;
+};
+export type CatalogPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 export type CatalogFiltersProps = {
   copy: CatalogCopy;
   filters: CatalogFilters;

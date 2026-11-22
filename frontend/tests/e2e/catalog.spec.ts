@@ -49,6 +49,12 @@ for (const colorScheme of ["dark", "light"] as const) {
     await expect(
       page.getByRole("link", { name: "View book: Frankenstein", exact: true }),
     ).toBeVisible();
+    const columns = await page
+      .getByRole("region", { name: "Search books", exact: true })
+      .getByRole("list")
+      .evaluate((list) => getComputedStyle(list).gridTemplateColumns.split(" ").length);
+    const width = page.viewportSize()?.width ?? 0;
+    expect(columns).toBe(width < 380 ? 1 : width < 768 ? 2 : width < 1280 ? 3 : 4);
     expect(
       (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag22aa"]).analyze())
         .violations,
@@ -65,3 +71,39 @@ for (const colorScheme of ["dark", "light"] as const) {
     await info.attach(`catalog-${colorScheme}`, { path, contentType: "image/png" });
   });
 }
+
+test("copied filter URLs survive reload, back and forward", async ({ page }) => {
+  await page.goto("/books?q=Frankenstein&currency=EUR&condition=very_good");
+  await expect(
+    page.getByRole("link", { name: "View book: Frankenstein", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Title, author or words from a book")).toHaveValue("Frankenstein");
+  await page.reload();
+  await expect(page.getByLabel("Title, author or words from a book")).toHaveValue("Frankenstein");
+  await expect(page.locator('select[name="currency"]').first()).toHaveValue("EUR");
+  const mobile = (page.viewportSize()?.width ?? 0) < 1024;
+  if (mobile) await page.getByRole("button", { name: "Filters", exact: true }).click();
+  const filters = mobile ? page.getByRole("dialog") : page.locator("aside");
+  await filters.getByRole("button", { name: "Clear filters" }).click();
+  await expect(page).toHaveURL(/\/books$/);
+  await expect(page.getByRole("link", { name: /View book: The Dispossessed/ })).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/q=Frankenstein/);
+  await expect(page.getByLabel("Title, author or words from a book")).toHaveValue("Frankenstein");
+  await expect(page.getByRole("link", { name: /View book: The Dispossessed/ })).toHaveCount(0);
+  await page.goForward();
+  await expect(page).toHaveURL(/\/books$/);
+  await expect(page.getByRole("link", { name: /View book: The Dispossessed/ })).toBeVisible();
+});
+test("a failed availability refresh hides stale cards and supports retry", async ({ page }) => {
+  await page.goto("/books");
+  await expect(page.getByRole("link", { name: /View book: Frankenstein/ })).toBeVisible();
+  const failed = (route: import("@playwright/test").Route) =>
+    route.fulfill({ status: 503, json: {} });
+  await page.route("**/api/v1/listings**", failed);
+  await expect(page.getByRole("alert")).toBeVisible({ timeout: 2500 });
+  await expect(page.getByRole("link", { name: /View book:/ })).toHaveCount(0);
+  await page.unroute("**/api/v1/listings**", failed);
+  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await expect(page.getByRole("link", { name: /View book: Frankenstein/ })).toBeVisible();
+});

@@ -102,7 +102,7 @@ it("ignores a slow previous page after the filters change", async () => {
   server.use(
     http.get(`${API_BASE_URL}${CATALOG_API}`, async ({ request }) => {
       const params = new URL(request.url).searchParams;
-      if (params.has("cursor")) {
+      if (Number(params.get("limit")) > 24) {
         started = true;
         await pending;
         return HttpResponse.json({ items: [catalogBooks[2]], nextCursor: null });
@@ -126,4 +126,45 @@ it("ignores a slow previous page after the filters change", async () => {
   expect(
     screen.queryByRole("link", { name: /View book: The Dispossessed/ }),
   ).not.toBeInTheDocument();
+});
+
+it("restores a copied URL and browser history without stale form values", async () => {
+  window.history.replaceState(null, "", "/books?q=Frankenstein&currency=EUR");
+  const initialFilters = catalogFilters(new URLSearchParams(window.location.search));
+  const { unmount } = render(
+    <BooksCatalog copy={CATALOG_COPY} initialFilters={initialFilters} syncUrl />,
+  );
+  const user = userEvent.setup();
+  expect(await screen.findByRole("link", { name: /View book: Frankenstein/ })).toBeInTheDocument();
+  expect(screen.getByLabelText(CATALOG_COPY.query)).toHaveValue("Frankenstein");
+  await user.clear(screen.getByLabelText(CATALOG_COPY.query));
+  await user.type(screen.getByLabelText(CATALOG_COPY.query), "Dispossessed");
+  await user.click(screen.getByRole("button", { name: CATALOG_COPY.search }));
+  expect(new URLSearchParams(window.location.search).get("q")).toBe("Dispossessed");
+  window.history.replaceState(null, "", "/books?q=Frankenstein&currency=EUR");
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  await waitFor(() =>
+    expect(screen.getByLabelText(CATALOG_COPY.query)).toHaveValue("Frankenstein"),
+  );
+  expect(await screen.findByRole("link", { name: /View book: Frankenstein/ })).toBeInTheDocument();
+  unmount();
+  window.history.replaceState(null, "", "/");
+});
+it("rejects malformed copied filter values", () => {
+  for (const query of ["condition=unknown", "currency=GBP", `q=${"x".repeat(201)}`, "author=%00"]) {
+    expect(() => catalogFilters(new URLSearchParams(query))).toThrow();
+  }
+});
+it("removes copies that disappear on refresh", async () => {
+  let visible = true;
+  server.use(
+    http.get(`${API_BASE_URL}${CATALOG_API}`, () =>
+      HttpResponse.json({ items: visible ? [catalogBooks[0]] : [], nextCursor: null }),
+    ),
+  );
+  render(<BooksCatalog copy={CATALOG_COPY} />);
+  expect(await screen.findByRole("link", { name: /View book: The Left Hand/ })).toBeInTheDocument();
+  visible = false;
+  expect(await screen.findByText(CATALOG_COPY.empty, {}, { timeout: 2500 })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /View book:/ })).not.toBeInTheDocument();
 });

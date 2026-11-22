@@ -611,7 +611,8 @@ export const CATALOG_COPY = {
   desktopPrefix: "catalog-rail",
   mobilePrefix: "catalog-sheet",
   queryId: "catalog-query",
-  coverSizes: "(min-width: 1280px) 260px, (min-width: 768px) 33vw, 45vw",
+  coverSizes:
+    "(max-width: 379px) 90vw, (max-width: 767px) 45vw, (max-width: 1023px) 30vw, (max-width: 1279px) 23vw, 260px",
   conditions: LISTING_COPY.conditions,
   fulfillments: [
     { value: "warehouse", label: LISTING_COPY.warehouse },
@@ -671,3 +672,6 @@ export const DETAIL_COPY = {
   conditions: LISTING_COPY.conditions,
   fulfillments: CATALOG_COPY.fulfillments,
 } as const;
+
+export const PUBLIC_REFRESH_MS = 1000;
+export const PUBLIC_FRESHNESS_MS = 2000;
