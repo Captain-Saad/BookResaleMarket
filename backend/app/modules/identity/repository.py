@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import Select, delete, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -226,3 +226,17 @@ async def list_users(db: AsyncSession, *, cursor: UUID | None, limit: int) -> li
 
 async def get_user_or_none(db: AsyncSession, user_id: UUID) -> User | None:
     return await db.get(User, user_id)
+
+
+def public_seller_addresses() -> Select[UUID, UUID, str, str, str]:
+    return (
+        select(Address.user_id, Address.id, Address.city, Address.region, Address.country)
+        .join(User, User.id == Address.user_id)
+        .join(SellerVerification, SellerVerification.user_id == User.id)
+        .join(UserRole, UserRole.user_id == User.id)
+        .where(
+            User.status == "active",
+            SellerVerification.status == "verified",
+            UserRole.role == Role.SELLER,
+        )
+    )

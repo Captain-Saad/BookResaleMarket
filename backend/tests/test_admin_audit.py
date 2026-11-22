@@ -21,6 +21,9 @@ USER = "reader@example.com"
 PASSWORD = "a-good-password"
 
 PUBLIC_ROUTES = {
+    ("GET", "/api/v1/listings"),
+    ("GET", "/api/v1/listings/{listing_id}"),
+    ("GET", "/api/v1/listings/{listing_id}/public-photos/{photo_id}"),
     ("PUT", "/api/v1/dev/listing-uploads/{photo_id}"),
     ("GET", "/api/v1/isbn/{isbn}"),
     ("GET", "/healthz"),

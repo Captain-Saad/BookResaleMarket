@@ -237,10 +237,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Seed dev data
-         * @description Number of records created. Nothing to seed until the first tables arrive (S1).
-         */
+        /** Seed dev data */
         post: operations["seed_api_v1_dev_seed_post"];
         delete?: never;
         options?: never;
@@ -306,7 +303,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Search Listings */
+        get: operations["search_listings_api_v1_listings_get"];
         put?: never;
         /** Create Listing */
         post: operations["create_listing_api_v1_listings_post"];
@@ -323,7 +321,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Public Listing Detail */
+        get: operations["public_listing_detail_api_v1_listings__listing_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -397,6 +396,23 @@ export interface paths {
         post?: never;
         /** Delete Listing Photo */
         delete: operations["delete_listing_photo_api_v1_listings__listing_id__photos__photo_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/listings/{listing_id}/public-photos/{photo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Public Listing Photo */
+        get: operations["read_public_listing_photo_api_v1_listings__listing_id__public_photos__photo_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1692,6 +1708,46 @@ export interface operations {
             };
         };
     };
+    search_listings_api_v1_listings_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                isbn?: string | null;
+                author?: string | null;
+                condition?: components["schemas"]["Condition"] | null;
+                fulfillment?: components["schemas"]["Fulfillment"] | null;
+                min_price?: number | null;
+                max_price?: number | null;
+                currency?: components["schemas"]["Currency"] | null;
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicListingPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_listing_api_v1_listings_post: {
         parameters: {
             query?: never;
@@ -1712,6 +1768,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_listing_detail_api_v1_listings__listing_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicListingDetail"];
                 };
             };
             /** @description Validation Error */
@@ -1912,6 +1999,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_public_listing_photo_api_v1_listings__listing_id__public_photos__photo_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                listing_id: string;
+                photo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from app.core.schemas import ApiModel
 
@@ -191,6 +191,13 @@ class ListingSearchQuery(ApiModel):
     currency: Currency | None = None
     cursor: str | None = Field(default=None, max_length=500)
     limit: int = Field(default=24, ge=1, le=100)
+
+    @field_validator("q", "author")
+    @classmethod
+    def safe_search_text(cls, value: str | None) -> str | None:
+        if value is not None and "\x00" in value:
+            raise ValueError("Search text cannot contain a null character")
+        return value.strip() or None if value is not None else None
 
     @model_validator(mode="after")
     def validate_price_range(self) -> "ListingSearchQuery":

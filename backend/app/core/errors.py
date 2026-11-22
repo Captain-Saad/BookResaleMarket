@@ -39,6 +39,11 @@ class AppError(Exception):
             self.code = code
 
 
+class InvalidQueryError(AppError):
+    status = HTTPStatus.UNPROCESSABLE_ENTITY
+    code = "validation_error"
+
+
 class NotFoundError(AppError):
     status = HTTPStatus.NOT_FOUND
     code = "not_found"

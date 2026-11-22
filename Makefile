@@ -1,4 +1,4 @@
-.PHONY: install hooks services dev dev-api dev-web check check-web check-api test e2e e2e-stack lighthouse audit migrate openapi
+.PHONY: install hooks services dev dev-api dev-web check check-web check-api test e2e e2e-stack lighthouse audit migrate openapi seed perf-search
 
 install:
 	pnpm install --frozen-lockfile
@@ -54,3 +54,9 @@ migrate:
 
 openapi:
 	cd frontend && pnpm api:generate
+
+seed:
+	cd backend && uv run python -m scripts.seed_listings
+
+perf-search:
+	cd backend && uv run pytest -m performance -s tests/test_public_listings.py

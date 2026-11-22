@@ -5,13 +5,17 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     CheckConstraint,
+    Computed,
     DateTime,
     ForeignKey,
     Index,
     Integer,
     String,
     Text,
+    func,
+    literal_column,
 )
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.models import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -43,6 +47,21 @@ class Listing(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ),
         CheckConstraint("version > 0", name="version"),
         Index("ix_listings_seller_id_id", "seller_id", "id"),
+        Index(
+            "ix_listings_text_trigram",
+            literal_column("lower((title::text || ' '::text) || author::text)").label(
+                "search_text"
+            ),
+            postgresql_using="gin",
+            postgresql_ops={"search_text": "gin_trgm_ops"},
+        ),
+        Index("ix_listings_search_document", "search_document", postgresql_using="gin"),
+        Index("ix_listings_status_id", "status", "id"),
+        Index("ix_listings_currency_price_id", "currency", "price_minor", "id"),
+    )
+    search_document: Mapped[str] = mapped_column(
+        TSVECTOR,
+        Computed("to_tsvector('english'::regconfig, title || ' ' || author)", persisted=True),
     )
     seller_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     book_id: Mapped[UUID | None] = mapped_column(ForeignKey("books.id"))
@@ -91,3 +110,11 @@ class ListingStatusHistory(UUIDPrimaryKeyMixin, Base):
     from_status: Mapped[str | None] = mapped_column(String(20))
     to_status: Mapped[str] = mapped_column(String(20))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+Index(
+    "ix_listings_author_trigram",
+    func.lower(Listing.author).label("author_text"),
+    postgresql_using="gin",
+    postgresql_ops={"author_text": "gin_trgm_ops"},
+)

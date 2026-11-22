@@ -46,8 +46,9 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-q -m 'not db and not redis'"
+addopts = "-q -m 'not db and not redis and not performance'"
 markers = [
+    "performance: explicit 50k listing search performance gate",
     "db: needs the real database from backend/.env (run with: uv run pytest -m db)",
     "redis: needs Redis from docker compose (run with: uv run pytest -m redis)",
 ]

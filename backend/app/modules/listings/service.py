@@ -1,20 +1,32 @@
 import asyncio
+import base64
+import binascii
+import hashlib
+import json
 import warnings
+from collections.abc import Callable
 from datetime import timedelta
 from hmac import compare_digest
 from io import BytesIO
+from typing import cast
 from uuid import UUID
 
-from PIL import Image, ImageOps, UnidentifiedImageError
-from sqlalchemy import select
+from PIL import Image, ImageDraw, ImageOps, UnidentifiedImageError
+from sqlalchemy import select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import Clock
-from app.core.errors import AppError, ConflictError, ForbiddenError, NotFoundError
+from app.core.errors import (
+    AppError,
+    ConflictError,
+    ForbiddenError,
+    InvalidQueryError,
+    NotFoundError,
+)
 from app.core.ids import uuid7
 from app.core.security import hash_token, new_token
-from app.integrations.isbn.base import IsbnLookupProvider, normalize_isbn
+from app.integrations.isbn.base import InvalidIsbnError, IsbnLookupProvider, normalize_isbn
 from app.integrations.storage.base import ImageScanner, PhotoStorage
 from app.modules.identity import service as identity
 from app.modules.identity.service import Authenticated
@@ -24,14 +36,23 @@ from app.modules.listings.models import ListingPhoto as PhotoModel
 from app.modules.listings.repository import get_book
 from app.modules.listings.schemas import (
     BookMetadata,
+    Condition,
+    Currency,
+    Fulfillment,
     ListingDraftRequest,
     ListingPage,
     ListingPatchRequest,
     ListingPhoto,
     ListingResponse,
+    ListingSearchQuery,
     ListingStatus,
     PhotoUploadRequest,
     PhotoUploadResponse,
+    PublicListingDetail,
+    PublicListingPage,
+    PublicListingStatus,
+    PublicListingSummary,
+    PublicLocation,
 )
 
 
@@ -436,3 +457,234 @@ async def read_photo(
         raise NotFoundError()
     url = await storage.read_url(photo.path)
     return (url, None) if url else (None, await storage.download(photo.path, MAX_PHOTO_BYTES))
+
+
+def search_fingerprint(filters: ListingSearchQuery) -> str:
+    payload = filters.model_dump(mode="json", exclude={"cursor", "limit"})
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:24]
+
+
+def search_cursor(listing_id: UUID, filters: ListingSearchQuery) -> str:
+    payload = json.dumps({"v": 1, "id": str(listing_id), "filters": search_fingerprint(filters)})
+    return base64.urlsafe_b64encode(payload.encode()).decode().rstrip("=")
+
+
+def parse_search_cursor(filters: ListingSearchQuery) -> UUID | None:
+    if not filters.cursor:
+        return None
+    try:
+        value = json.loads(
+            base64.b64decode(
+                filters.cursor + "=" * (-len(filters.cursor) % 4), altchars=b"-_", validate=True
+            )
+        )
+        if value["v"] != 1 or value["filters"] != search_fingerprint(filters):
+            raise ValueError
+        return UUID(value["id"])
+    except (ValueError, TypeError, KeyError, binascii.Error) as exc:
+        raise InvalidQueryError(code="invalid_search_cursor") from exc
+
+
+def public_summary(
+    listing: Listing, city: str, region: str, country: str, cover: str | None
+) -> PublicListingSummary:
+    return PublicListingSummary(
+        id=listing.id,
+        isbn=listing.isbn,
+        title=listing.title,
+        author=listing.author,
+        condition=Condition(listing.condition),
+        fulfillment=Fulfillment(listing.fulfillment),
+        price_minor=cast(int, listing.price_minor),
+        currency=Currency(listing.currency),
+        status=PublicListingStatus(listing.status),
+        available=listing.status == "active",
+        location=PublicLocation(city=city, region=region, country=country),
+        cover_url=cover,
+    )
+
+
+async def search_public(
+    db: AsyncSession, filters: ListingSearchQuery, photo_url: Callable[[UUID, UUID], str]
+) -> PublicListingPage:
+    if filters.isbn:
+        try:
+            filters = filters.model_copy(update={"isbn": normalize_isbn(filters.isbn)})
+        except InvalidIsbnError as exc:
+            raise InvalidQueryError(code="invalid_isbn") from exc
+    after = parse_search_cursor(filters)
+    rows = await repository.public_page(db, filters, after)
+    visible = rows[: filters.limit]
+    return PublicListingPage(
+        items=[
+            public_summary(
+                listing,
+                city,
+                region,
+                country,
+                photo_url(listing.id, cover_id) if cover_id else None,
+            )
+            for listing, city, region, country, cover_id in visible
+        ],
+        next_cursor=search_cursor(visible[-1][0].id, filters)
+        if len(rows) > filters.limit
+        else None,
+    )
+
+
+async def detail_public(
+    db: AsyncSession, listing_id: UUID, photo_url: Callable[[UUID, UUID], str]
+) -> PublicListingDetail:
+    row = (
+        await db.execute(repository.public_query(detail=True).where(Listing.id == listing_id))
+    ).one_or_none()
+    if row is None:
+        raise NotFoundError()
+    listing, city, region, country = row
+    photos = [
+        ListingPhoto(id=p.id, position=p.position, url=photo_url(listing_id, p.id))
+        for p in await repository.public_photos(db, [listing_id])
+    ]
+    summary = public_summary(listing, city, region, country, photos[0].url if photos else None)
+    return PublicListingDetail(
+        **summary.model_dump(),
+        notes=listing.notes,
+        photos=photos,
+        delivery_estimate=None,
+        updated_at=listing.updated_at,
+    )
+
+
+async def read_public_photo(
+    db: AsyncSession, listing_id: UUID, photo_id: UUID, storage: PhotoStorage
+) -> bytes:
+    visible = await db.scalar(
+        repository.public_query(detail=True)
+        .where(Listing.id == listing_id)
+        .with_only_columns(Listing.id)
+    )
+    if visible is None:
+        raise NotFoundError()
+    photo = await db.scalar(
+        select(PhotoModel).where(
+            PhotoModel.id == photo_id,
+            PhotoModel.listing_id == listing_id,
+            PhotoModel.validated.is_(True),
+        )
+    )
+    if photo is None:
+        raise NotFoundError()
+    return await storage.download(photo.path, MAX_PHOTO_BYTES)
+
+
+def demo_id(seller: UUID, index: int, kind: str) -> UUID:
+    digest = hashlib.sha256(f"bookloop-demo-v1:{seller}:{index}:{kind}".encode()).hexdigest()
+    return UUID(f"01900000-0000-7{digest[:3]}-8{digest[3:6]}-{digest[6:18]}")
+
+
+def demo_photo(index: int) -> bytes:
+    image = Image.new("RGB", (600, 900), (35 + index % 100, 45, 95))
+    draw = ImageDraw.Draw(image)
+    draw.text((40, 100), "BOOKLOOP DEMO", fill="white", font_size=36)
+    draw.text((40, 180), f"Reading copy {index + 1}", fill="white", font_size=28)
+    data = BytesIO()
+    image.save(data, "JPEG", quality=85)
+    return data.getvalue()
+
+
+async def seed_listings(
+    db: AsyncSession,
+    count: int = 500,
+    *,
+    seller_id: UUID | None = None,
+    storage: PhotoStorage | None = None,
+) -> int:
+    if not 500 <= count <= 50_000:
+        raise ValueError("Seed count must be between 500 and 50000")
+    eligible = identity.public_seller_locations()
+    query = select(eligible.c.user_id, eligible.c.id).order_by(eligible.c.user_id, eligible.c.id)
+    if seller_id is not None:
+        query = query.where(eligible.c.user_id == seller_id)
+    row = (await db.execute(query.limit(1))).one_or_none()
+    if row is None:
+        raise NotFoundError(
+            "Create a verified seller with an address first", code="seed_seller_required"
+        )
+    seller, address = row
+    existing = set(await db.scalars(select(Listing.id).where(Listing.seller_id == seller)))
+    missing = [
+        (i, demo_id(seller, i, "listing"))
+        for i in range(count)
+        if demo_id(seller, i, "listing") not in existing
+    ]
+    titles = (
+        "The Quiet Library",
+        "A Journey Through Space",
+        "Gardens of Tomorrow",
+        "History of the City",
+        "Mathematics for Readers",
+    )
+    authors = ("Ada Reader", "Samuel Green", "Maya Finch", "Noah Brooks", "Leila Stone")
+    for offset in range(0, len(missing), 500):
+        batch = missing[offset : offset + 500]
+        await db.execute(
+            insert(Listing),
+            [
+                dict(
+                    id=id_,
+                    seller_id=seller,
+                    address_id=address,
+                    title=f"{titles[i % len(titles)]} — Demo {i + 1}",
+                    author=authors[i % len(authors)],
+                    condition=("good", "like_new", "very_good", "acceptable", "new")[i % 5],
+                    fulfillment="warehouse" if i % 3 == 0 else "on_demand",
+                    currency="EUR" if i % 2 else "USD",
+                    price_minor=500 + (i % 200) * 25,
+                    notes="Demo listing for development; not a real item for sale.",
+                    status="draft",
+                )
+                for i, id_ in batch
+            ],
+        )
+        photos = []
+        for i, id_ in batch:
+            path = f"demo/{seller}/{id_}.jpg"
+            data = demo_photo(i) if storage else b""
+            if storage:
+                await storage.store(path, data, "image/jpeg")
+            photos.append(
+                dict(
+                    id=demo_id(seller, i, "photo"),
+                    listing_id=id_,
+                    path=path,
+                    content_type="image/jpeg",
+                    size_bytes=len(data) or 100,
+                    position=0,
+                    validated=True,
+                )
+            )
+        await db.execute(insert(PhotoModel), photos)
+        ids = [id_ for _, id_ in batch]
+        for fulfillment, status in (("warehouse", "incoming"), ("on_demand", "active")):
+            await db.execute(
+                update(Listing)
+                .where(Listing.id.in_(ids), Listing.fulfillment == fulfillment)
+                .values(status=status)
+            )
+    await db.commit()
+    await db.execute(
+        text("ANALYZE listings, listing_photos, users, addresses, user_roles, seller_verifications")
+    )
+    await db.commit()
+    return len(missing)
+
+
+async def simulate_reservation(db: AsyncSession, clock: Clock, listing_id: UUID) -> bool:
+    reserved = await db.scalar(
+        update(Listing)
+        .where(Listing.id == listing_id, Listing.status == "active")
+        .values(status="reserved", updated_at=clock.now())
+        .returning(Listing.id)
+    )
+    await db.commit()
+    return reserved is not None

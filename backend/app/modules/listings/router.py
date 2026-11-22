@@ -19,9 +19,12 @@ from app.modules.listings.schemas import (
     ListingPage,
     ListingPatchRequest,
     ListingResponse,
+    ListingSearchQuery,
     PhotoCompleteRequest,
     PhotoUploadRequest,
     PhotoUploadResponse,
+    PublicListingDetail,
+    PublicListingPage,
 )
 from app.modules.listings.service import lookup_book
 
@@ -218,3 +221,46 @@ def photo_urls(result: ListingResponse, request: Request) -> ListingResponse:
             ]
         }
     )
+
+
+@router.get(
+    "/listings", dependencies=[Depends(public), Depends(rate_limit_by_ip("public-search", 240, 60))]
+)
+async def search_listings(
+    request: Request, db: DbDep, filters: Annotated[ListingSearchQuery, Query()]
+) -> PublicListingPage:
+    return await service.search_public(
+        db,
+        filters,
+        lambda listing_id, photo_id: str(
+            request.url_for("read_public_listing_photo", listing_id=listing_id, photo_id=photo_id)
+        ),
+    )
+
+
+@router.get(
+    "/listings/{listing_id}",
+    dependencies=[Depends(public), Depends(rate_limit_by_ip("public-detail", 240, 60))],
+)
+async def public_listing_detail(
+    listing_id: UUID, request: Request, db: DbDep
+) -> PublicListingDetail:
+    return await service.detail_public(
+        db,
+        listing_id,
+        lambda listing_id, photo_id: str(
+            request.url_for("read_public_listing_photo", listing_id=listing_id, photo_id=photo_id)
+        ),
+    )
+
+
+@router.get(
+    "/listings/{listing_id}/public-photos/{photo_id}",
+    name="read_public_listing_photo",
+    dependencies=[Depends(public), Depends(rate_limit_by_ip("public-photo", 600, 60))],
+)
+async def public_listing_photo(
+    listing_id: UUID, photo_id: UUID, db: DbDep, storage: Storage
+) -> Response:
+    data = await service.read_public_photo(db, listing_id, photo_id, storage)
+    return Response(data, media_type="image/jpeg", headers={"Cache-Control": "private, no-store"})

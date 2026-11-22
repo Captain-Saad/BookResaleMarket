@@ -14,6 +14,8 @@ from app.modules.identity import service
 from app.modules.identity.deps import require_roles
 from app.modules.identity.models import Role, SellerVerificationStatus
 from app.modules.identity.schemas import Email
+from app.modules.listings.router import Storage
+from app.modules.listings.service import seed_listings
 
 DevRole = Literal["buyer", "seller", "warehouse", "courier", "dispatcher", "admin"]
 
@@ -67,9 +69,8 @@ async def switch_session(body: SessionRequest, request: Request) -> SessionRespo
 
 
 @router.post("/seed", summary="Seed dev data")
-async def seed() -> SeedResponse:
-    """Number of records created. Nothing to seed until the first tables arrive (S1)."""
-    return SeedResponse(seeded=0)
+async def seed(db: DbDep, storage: Storage) -> SeedResponse:
+    return SeedResponse(seeded=await seed_listings(db, storage=storage))
 
 
 @router.post("/reset", summary="Reset dev data")

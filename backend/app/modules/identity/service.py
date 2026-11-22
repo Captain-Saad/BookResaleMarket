@@ -7,6 +7,7 @@ from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import Subquery
 
 from app.core.clock import Clock
 from app.core.config import Settings
@@ -476,3 +477,7 @@ async def record_seller_verification(
         raise NotFoundError()
     verification.status = status
     await db.commit()
+
+
+def public_seller_locations() -> Subquery:
+    return repository.public_seller_addresses().subquery()

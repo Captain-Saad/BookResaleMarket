@@ -65,7 +65,7 @@ def test_unknown_roles_are_rejected(admin_api: TestClient) -> None:
 
 
 def test_seed_and_reset_report_record_counts(admin_api: TestClient) -> None:
-    assert admin_api.post("/api/v1/dev/seed").json() == {"seeded": 0}
+    assert admin_api.post("/api/v1/dev/seed").json()["code"] == "seed_seller_required"
     assert admin_api.post("/api/v1/dev/reset").json() == {"reset": 0}
 
 
