@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { API_BASE_URL, CATALOG_API } from "@/lib/constants";
-import type { PublicBook, PublicBookPage } from "@/lib/types";
+import type { PublicBook, PublicBookDetail, PublicBookPage } from "@/lib/types";
 
 export const catalogBooks: PublicBook[] = [
   {
@@ -69,3 +69,30 @@ export const catalogHandlers = [
     HttpResponse.json(mockCatalogPage(new URL(request.url).searchParams)),
   ),
 ];
+
+export const mockPublicDetail = (book: PublicBook = catalogBooks[1]!): PublicBookDetail => ({
+  ...book,
+  notes: "A clean reading copy with light wear at the spine. No missing pages.",
+  deliveryEstimate: null,
+  updatedAt: "2026-11-22T12:00:00Z",
+  photos: [
+    {
+      id: "01900000-0000-7000-8000-000000000201",
+      position: 0,
+      url: "https://covers.openlibrary.org/b/id/109033-L.jpg",
+    },
+    {
+      id: "01900000-0000-7000-8000-000000000202",
+      position: 1,
+      url: "https://covers.openlibrary.org/b/id/109033-M.jpg",
+    },
+  ],
+});
+catalogHandlers.push(
+  http.get(`${API_BASE_URL}${CATALOG_API}/:id`, ({ params }) => {
+    const book = catalogBooks.find((item) => item.id === params.id);
+    return book
+      ? HttpResponse.json(mockPublicDetail(book))
+      : HttpResponse.json({ code: "not_found" }, { status: 404 });
+  }),
+);

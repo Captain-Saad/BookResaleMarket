@@ -121,6 +121,8 @@ export type BookShelfProps = { shelf: Shelf; coverSizes: string };
 
 export type BookCoverProps = {
   coverId?: number;
+  fit?: CoverFit;
+  className?: string;
   label?: string;
   src?: string | null;
   title: string;
@@ -357,3 +359,15 @@ export type CatalogFiltersProps = {
   onSubmit: import("react").FormEventHandler<HTMLFormElement>;
   onReset: () => void;
 };
+
+export enum CoverFit {
+  Cover = "cover",
+  Contain = "contain",
+}
+export type DetailCopy = typeof import("@/lib/constants").DETAIL_COPY;
+export type ListingDetailProps = { id: string; initial?: PublicBookDetail; copy: DetailCopy };
+export type ListingOverviewProps = { book: PublicBookDetail; copy: DetailCopy };
+export type BookGalleryProps = ListingOverviewProps;
+export type PurchaseCardProps = ListingOverviewProps & { compact?: boolean };
+
+export type PublicBookPageProps = { params: Promise<{ id: string }> };
