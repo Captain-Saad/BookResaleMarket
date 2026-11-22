@@ -886,6 +886,50 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** ListingSearchQuery */
+        ListingSearchQuery: {
+            /**
+             * Author
+             * @default null
+             */
+            author: string | null;
+            /** @default null */
+            condition: components["schemas"]["Condition"] | null;
+            /** @default null */
+            currency: components["schemas"]["Currency"] | null;
+            /**
+             * Cursor
+             * @default null
+             */
+            cursor: string | null;
+            /** @default null */
+            fulfillment: components["schemas"]["Fulfillment"] | null;
+            /**
+             * Isbn
+             * @default null
+             */
+            isbn: string | null;
+            /**
+             * Limit
+             * @default 24
+             */
+            limit: number;
+            /**
+             * Max Price
+             * @default null
+             */
+            max_price: number | null;
+            /**
+             * Min Price
+             * @default null
+             */
+            min_price: number | null;
+            /**
+             * Q
+             * @default null
+             */
+            q: string | null;
+        };
         /**
          * ListingStatus
          * @enum {string}
@@ -949,6 +993,88 @@ export interface components {
              * @default about:blank
              */
             type: string;
+        };
+        /** PublicListingDetail */
+        PublicListingDetail: {
+            /** Author */
+            author: string;
+            /** Available */
+            available: boolean;
+            condition: components["schemas"]["Condition"];
+            /** Coverurl */
+            coverUrl: string | null;
+            currency: components["schemas"]["Currency"];
+            /** Deliveryestimate */
+            deliveryEstimate: string | null;
+            fulfillment: components["schemas"]["Fulfillment"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Isbn */
+            isbn: string | null;
+            location: components["schemas"]["PublicLocation"];
+            /** Notes */
+            notes: string;
+            /** Photos */
+            photos: components["schemas"]["ListingPhoto"][];
+            /** Priceminor */
+            priceMinor: number;
+            status: components["schemas"]["PublicListingStatus"];
+            /** Title */
+            title: string;
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+        };
+        /** PublicListingPage */
+        PublicListingPage: {
+            /** Items */
+            items: components["schemas"]["PublicListingSummary"][];
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /**
+         * PublicListingStatus
+         * @enum {string}
+         */
+        PublicListingStatus: "incoming" | "active" | "reserved" | "sold";
+        /** PublicListingSummary */
+        PublicListingSummary: {
+            /** Author */
+            author: string;
+            /** Available */
+            available: boolean;
+            condition: components["schemas"]["Condition"];
+            /** Coverurl */
+            coverUrl: string | null;
+            currency: components["schemas"]["Currency"];
+            fulfillment: components["schemas"]["Fulfillment"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Isbn */
+            isbn: string | null;
+            location: components["schemas"]["PublicLocation"];
+            /** Priceminor */
+            priceMinor: number;
+            status: components["schemas"]["PublicListingStatus"];
+            /** Title */
+            title: string;
+        };
+        /** PublicLocation */
+        PublicLocation: {
+            /** City */
+            city: string;
+            /** Country */
+            country: string;
+            /** Region */
+            region: string;
         };
         /** ReadyResponse */
         ReadyResponse: {

@@ -780,6 +780,133 @@
         "title": "ListingResponse",
         "type": "object"
       },
+      "ListingSearchQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "author": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Author"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Condition"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Currency"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          },
+          "fulfillment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fulfillment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "isbn": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Isbn"
+          },
+          "limit": {
+            "default": 24,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "max_price": {
+            "anyOf": [
+              {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max Price"
+          },
+          "min_price": {
+            "anyOf": [
+              {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Min Price"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Q"
+          }
+        },
+        "title": "ListingSearchQuery",
+        "type": "object"
+      },
       "ListingStatus": {
         "enum": [
           "draft",
@@ -939,6 +1066,258 @@
           "code"
         ],
         "title": "ProblemDetails",
+        "type": "object"
+      },
+      "PublicListingDetail": {
+        "properties": {
+          "author": {
+            "title": "Author",
+            "type": "string"
+          },
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "condition": {
+            "$ref": "#/components/schemas/Condition"
+          },
+          "coverUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverurl"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "deliveryEstimate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deliveryestimate"
+          },
+          "fulfillment": {
+            "$ref": "#/components/schemas/Fulfillment"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "isbn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isbn"
+          },
+          "location": {
+            "$ref": "#/components/schemas/PublicLocation"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "photos": {
+            "items": {
+              "$ref": "#/components/schemas/ListingPhoto"
+            },
+            "title": "Photos",
+            "type": "array"
+          },
+          "priceMinor": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "title": "Priceminor",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PublicListingStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "isbn",
+          "title",
+          "author",
+          "condition",
+          "fulfillment",
+          "priceMinor",
+          "currency",
+          "status",
+          "available",
+          "location",
+          "coverUrl",
+          "notes",
+          "photos",
+          "deliveryEstimate",
+          "updatedAt"
+        ],
+        "title": "PublicListingDetail",
+        "type": "object"
+      },
+      "PublicListingPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PublicListingSummary"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "PublicListingPage",
+        "type": "object"
+      },
+      "PublicListingStatus": {
+        "enum": [
+          "incoming",
+          "active",
+          "reserved",
+          "sold"
+        ],
+        "title": "PublicListingStatus",
+        "type": "string"
+      },
+      "PublicListingSummary": {
+        "properties": {
+          "author": {
+            "title": "Author",
+            "type": "string"
+          },
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "condition": {
+            "$ref": "#/components/schemas/Condition"
+          },
+          "coverUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverurl"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "fulfillment": {
+            "$ref": "#/components/schemas/Fulfillment"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "isbn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isbn"
+          },
+          "location": {
+            "$ref": "#/components/schemas/PublicLocation"
+          },
+          "priceMinor": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "title": "Priceminor",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PublicListingStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "isbn",
+          "title",
+          "author",
+          "condition",
+          "fulfillment",
+          "priceMinor",
+          "currency",
+          "status",
+          "available",
+          "location",
+          "coverUrl"
+        ],
+        "title": "PublicListingSummary",
+        "type": "object"
+      },
+      "PublicLocation": {
+        "properties": {
+          "city": {
+            "title": "City",
+            "type": "string"
+          },
+          "country": {
+            "title": "Country",
+            "type": "string"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          }
+        },
+        "required": [
+          "city",
+          "region",
+          "country"
+        ],
+        "title": "PublicLocation",
         "type": "object"
       },
       "ReadyResponse": {

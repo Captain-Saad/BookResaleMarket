@@ -127,7 +127,7 @@ class PhotoCompleteRequest(ApiModel):
     photo_id: UUID
 
 
-CONTRACT_MODELS = (
+CONTRACT_MODELS: tuple[type[ApiModel], ...] = (
     BookMetadata,
     ListingDraftRequest,
     ListingPatchRequest,
@@ -136,4 +136,79 @@ CONTRACT_MODELS = (
     PhotoUploadRequest,
     PhotoUploadResponse,
     PhotoCompleteRequest,
+)
+
+
+class PublicListingStatus(StrEnum):
+    INCOMING = "incoming"
+    ACTIVE = "active"
+    RESERVED = "reserved"
+    SOLD = "sold"
+
+
+class PublicLocation(ApiModel):
+    city: str
+    region: str
+    country: str
+
+
+class PublicListingSummary(ApiModel):
+    id: UUID
+    isbn: str | None
+    title: str
+    author: str
+    condition: Condition
+    fulfillment: Fulfillment
+    price_minor: int = Field(gt=0, le=9_007_199_254_740_991)
+    currency: Currency
+    status: PublicListingStatus
+    available: bool
+    location: PublicLocation
+    cover_url: str | None
+
+
+class PublicListingDetail(PublicListingSummary):
+    notes: str
+    photos: list[ListingPhoto]
+    delivery_estimate: str | None
+    updated_at: datetime
+
+
+class PublicListingPage(ApiModel):
+    items: list[PublicListingSummary]
+    next_cursor: str | None
+
+
+class ListingSearchQuery(ApiModel):
+    model_config = ConfigDict(alias_generator=None, extra="forbid")
+    q: str | None = Field(default=None, max_length=200)
+    isbn: str | None = Field(default=None, max_length=32)
+    author: str | None = Field(default=None, max_length=200)
+    condition: Condition | None = None
+    fulfillment: Fulfillment | None = None
+    min_price: int | None = Field(default=None, ge=0, le=9_007_199_254_740_991)
+    max_price: int | None = Field(default=None, ge=0, le=9_007_199_254_740_991)
+    currency: Currency | None = None
+    cursor: str | None = Field(default=None, max_length=500)
+    limit: int = Field(default=24, ge=1, le=100)
+
+    @model_validator(mode="after")
+    def validate_price_range(self) -> "ListingSearchQuery":
+        if self.min_price is not None or self.max_price is not None:
+            if self.currency is None:
+                raise ValueError("Choose a currency when filtering prices")
+        if (
+            self.min_price is not None
+            and self.max_price is not None
+            and self.min_price > self.max_price
+        ):
+            raise ValueError("Minimum price cannot exceed maximum price")
+        return self
+
+
+CONTRACT_MODELS += (
+    PublicListingSummary,
+    PublicListingDetail,
+    PublicListingPage,
+    ListingSearchQuery,
 )
