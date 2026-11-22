@@ -53,10 +53,21 @@ CI runs these checks on every pull request, using its own Postgres and Redis (`.
 
 Run `make services`, `make migrate`, then `make dev`. Sign in, become a seller at `/account/seller`, start verification, and add a pickup/return address at `/account/addresses`. A verified seller can publish from `/sell`; incomplete drafts autosave and can be reopened at `/sell/listings`.
 
-For local testing, grant an administrator role with `cd backend && uv run python -m scripts.grant_role YOUR_EMAIL admin`, then sign in as that administrator and use **Dev test console → Seller verification** to mark a seller who has started verification as verified. This console and verification endpoint are unavailable in production. The role switch/seed/reset console buttons remain placeholders; they do not create accounts.
+For local testing, grant an administrator role with `cd backend && uv run python -m scripts.grant_role YOUR_EMAIL admin`, then sign in as that administrator and use **Dev test console → Seller verification** to mark a seller who has started verification as verified. This console and verification endpoint are unavailable in production. The role switch/reset console buttons remain placeholders. Seeding uses an existing verified seller with an address; it does not create accounts.
 
 Upload up to six JPEG/PNG/WebP photos, 5 MiB each and 20 megapixels. Local development uses private files under `backend/var/listing-photos`; production needs the private Supabase bucket settings in `backend/.env.example`. Upload completion re-encodes images and removes EXIF. The malware scan hook still needs a real production adapter, and private orphan cleanup must be configured before launch.
 
 On-demand publish makes a listing active; warehouse publish leaves it incoming until a later warehouse slice implements intake. ISBN and condition lock permanently after the listing becomes purchasable. Buyer commitment locks sale details/photos. An address used by an incoming, active, reserved or sold listing cannot be deleted until its listing changes or is deactivated.
 
 Run `make check` and `make e2e-stack`. The stack suite uses the isolated `postgres-test` service, the real API and Mailpit. Its listing flow runs at phone, tablet and desktop sizes, checks dark/light accessibility and captures review screenshots. Do not point `E2E_DATABASE_URL` at a development or production database.
+
+
+### S3 public catalog and demo data
+
+After seller setup above, run `make migrate` and `make seed` to add 500 clearly labeled demo copies. Repeating the seed skips existing copies. The admin-only, non-production Dev test console Seed button runs the same seed. It creates sample photos in the configured private storage. The CLI refuses production settings. To seed a larger development dataset: `cd backend && uv run python -m scripts.seed_listings --count 50000`.
+
+Public `GET /api/v1/listings` supports text, ISBN, author, condition, fulfillment and currency-aware price filters with cursor pagination. Search includes active and incoming copies; reserved/sold detail pages stay visible but unavailable. Seller location is city/region/country only. Suspended or unverified sellers are excluded on every request. Availability responses use no-store without ETags. Delivery estimates use the approved checkout placeholder until timing rules exist.
+
+`make perf-search` runs the explicit 50,000-listing p95 < 200 ms search gate against throwaway test-container data. This benchmark is separate from routine `make check`; Docker is required. The mocked frontend is connected in the subsequent S3 wiring steps.
+
+For the S3 stock simulation, run `cd backend && uv run python -m scripts.reserve_listing LISTING_UUID` using an active demo copy. This non-production CLI changes stock only; it creates no order/payment. The copy must disappear from search while its detail stays visible and unavailable. The normal database purchase lock applies, so use disposable demo data.
