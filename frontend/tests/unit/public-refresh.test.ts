@@ -51,3 +51,22 @@ it("preserves the old snapshot deadline while loading another page", async () =>
   expect(failed).toHaveBeenCalled();
   stop();
 });
+
+it("rejects an overdue result even when its timeout callback has not run", async () => {
+  vi.useFakeTimers();
+  let finish: (value: number) => void = () => {};
+  const pending = new Promise<number>((resolve) => {
+    finish = resolve;
+  });
+  const next = vi.fn();
+  const failed = vi.fn();
+  const started = Date.now();
+  const stop = observePublic(() => pending, next, failed);
+  vi.setSystemTime(started + PUBLIC_FRESHNESS_MS + 1);
+  finish(1);
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(next).not.toHaveBeenCalled();
+  expect(failed).toHaveBeenCalled();
+  stop();
+});

@@ -41,7 +41,10 @@ export default defineConfig({
       command: `pnpm build && pnpm start --port ${WEB_PORT}`,
       url: `http://localhost:${WEB_PORT}`,
       timeout: 180_000,
-      env: { NEXT_PUBLIC_API_BASE_URL: `http://localhost:${API_PORT}` },
+      env: {
+        NEXT_PUBLIC_API_BASE_URL: `http://localhost:${API_PORT}`,
+        NEXT_PUBLIC_SITE_URL: `http://localhost:${WEB_PORT}`,
+      },
     },
   ],
 });

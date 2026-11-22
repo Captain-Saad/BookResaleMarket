@@ -374,8 +374,17 @@ export enum CoverFit {
   Contain = "contain",
 }
 export type DetailCopy = typeof import("@/lib/constants").DETAIL_COPY;
-export type ListingDetailProps = { id: string; initial?: PublicBookDetail; copy: DetailCopy };
-export type ListingOverviewProps = { book: PublicBookDetail; copy: DetailCopy };
+export type ListingDetailProps = {
+  id: string;
+  initial?: PublicBookDetail;
+  canonicalUrl?: string;
+  copy: DetailCopy;
+};
+export type ListingOverviewProps = {
+  book: PublicBookDetail;
+  copy: DetailCopy;
+  canonicalUrl?: string;
+};
 export type BookGalleryProps = ListingOverviewProps;
 export type PurchaseCardProps = ListingOverviewProps & { compact?: boolean };
 

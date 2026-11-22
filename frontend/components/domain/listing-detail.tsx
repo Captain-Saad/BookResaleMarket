@@ -5,10 +5,10 @@ import ListingOverview from "@/components/domain/listing-overview";
 import usePublicListing from "@/hooks/use-public-listing";
 import { LoadStatus, type ListingDetailProps } from "@/lib/types";
 
-const ListingDetail = ({ id, copy, initial }: ListingDetailProps) => {
+const ListingDetail = ({ id, copy, initial, canonicalUrl }: ListingDetailProps) => {
   const detail = usePublicListing(id, copy, initial);
   if (detail.status === LoadStatus.Ready && detail.book)
-    return <ListingOverview book={detail.book} copy={copy} />;
+    return <ListingOverview book={detail.book} copy={copy} canonicalUrl={canonicalUrl} />;
   return (
     <main className="flex-1 px-4 py-10">
       <section className="glass glass--2 mx-auto flex w-full max-w-page flex-col gap-5 p-6">

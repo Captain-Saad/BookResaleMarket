@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { mockCatalogPage } from "@/lib/api/mocks/catalog";
+import { mockCatalogPage, mockPublicDetail } from "@/lib/api/mocks/catalog";
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/v1/listings**", (route) =>
@@ -106,4 +106,36 @@ test("a failed availability refresh hides stale cards and supports retry", async
   await page.unroute("**/api/v1/listings**", failed);
   await page.getByRole("button", { name: "Try again", exact: true }).click();
   await expect(page.getByRole("link", { name: /View book: Frankenstein/ })).toBeVisible();
+});
+
+test("restores filters after a detail visit, reload and history traversal", async ({ page }) => {
+  await page.route("**/api/v1/listings/*", (route) =>
+    route.fulfill({ json: { ...mockPublicDetail(), photos: [], coverUrl: null } }),
+  );
+  await page.goto("/books?q=Frankenstein");
+  await page.getByRole("link", { name: "View book: Frankenstein", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Frankenstein");
+  await page.goBack();
+  await expect(
+    page.getByRole("link", { name: "View book: Frankenstein", exact: true }),
+  ).toBeVisible();
+  const mobile = (page.viewportSize()?.width ?? 0) < 1024;
+  if (mobile) await page.getByRole("button", { name: "Filters", exact: true }).click();
+  const filters = mobile ? page.getByRole("dialog") : page.locator("aside");
+  await filters.getByRole("combobox", { name: "Condition", exact: true }).selectOption("new");
+  await filters.getByRole("button", { name: "Apply filters" }).click();
+  await expect(
+    page.getByRole("link", { name: "View book: Frankenstein", exact: true }),
+  ).toHaveCount(0);
+  await page.reload();
+  await expect(
+    page.getByText("No books match this shelf yet. Try fewer filters or a different search.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/q=Frankenstein$/);
+  await expect(
+    page.getByRole("link", { name: "View book: Frankenstein", exact: true }),
+  ).toBeVisible();
 });

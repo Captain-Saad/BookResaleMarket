@@ -21,6 +21,14 @@ export const catalogClient = {
         cache: "no-store",
       }),
     ),
+  detail: async (listing_id: string, signal?: AbortSignal) =>
+    data(
+      await api.GET("/api/v1/listings/{listing_id}", {
+        params: { path: { listing_id } },
+        signal,
+        cache: "no-store",
+      }),
+    ),
   pages: async (
     filters: CatalogFilters,
     count: number,
@@ -74,6 +82,7 @@ export const observePublic = <T>(
     try {
       const value = await load(active.signal);
       if (stopped || active.signal.aborted) return;
+      if (Date.now() - started >= PUBLIC_FRESHNESS_MS) throw new PublicRequestError(503);
       freshAt = started;
       next(value, started);
       expire();

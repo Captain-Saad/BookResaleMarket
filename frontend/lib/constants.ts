@@ -675,3 +675,6 @@ export const DETAIL_COPY = {
 
 export const PUBLIC_REFRESH_MS = 1000;
 export const PUBLIC_FRESHNESS_MS = 2000;
+
+export const PUBLIC_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+export const SCHEMA_ORG = "https://schema.org";

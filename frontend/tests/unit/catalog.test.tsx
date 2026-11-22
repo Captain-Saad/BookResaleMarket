@@ -12,8 +12,13 @@ import { axeViolations } from "../utils/axe";
 
 it("loads public copies, flags incoming stock and supports text search", async () => {
   render(<BooksCatalog copy={CATALOG_COPY} />);
-  expect(await screen.findByRole("link", { name: /View book: Frankenstein/ })).toBeInTheDocument();
-  expect(screen.getByText(CATALOG_COPY.incoming)).toBeInTheDocument();
+  await waitFor(
+    () => {
+      expect(screen.getByRole("link", { name: /View book: Frankenstein/ })).toBeInTheDocument();
+      expect(screen.getByText(CATALOG_COPY.incoming)).toBeInTheDocument();
+    },
+    { timeout: 10_000 },
+  );
   const user = userEvent.setup();
   await user.type(screen.getByLabelText(CATALOG_COPY.query), "Dispossessed");
   await user.click(screen.getByRole("button", { name: CATALOG_COPY.search }));

@@ -94,3 +94,42 @@ it("shows a retry when the detail service fails", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent(DETAIL_COPY.failed);
   expect(screen.getByRole("button", { name: DETAIL_COPY.retry })).toBeInTheDocument();
 });
+
+it("refreshes an open detail and its structured availability when stock is reserved", async () => {
+  let reserved = false;
+  const initial = mockPublicDetail(catalogBooks[0]);
+  server.use(
+    http.get(`${API_BASE_URL}${CATALOG_API}/:id`, () =>
+      HttpResponse.json({
+        ...initial,
+        status: reserved ? "reserved" : "active",
+        available: !reserved,
+      }),
+    ),
+  );
+  const { container } = render(
+    <ListingDetail
+      id={initial.id}
+      copy={DETAIL_COPY}
+      canonicalUrl={`http://localhost/books/${initial.id}`}
+    />,
+  );
+  expect(await screen.findByRole("heading", { level: 1, name: initial.title })).toBeInTheDocument();
+  expect(
+    JSON.parse(container.querySelector('script[type="application/ld+json"]')!.textContent!).offers
+      .availability,
+  ).toMatch(/InStock$/);
+  reserved = true;
+  expect(
+    await screen.findByText(DETAIL_COPY.reservedHelp, {}, { timeout: 2500 }),
+  ).toBeInTheDocument();
+  expect(
+    JSON.parse(container.querySelector('script[type="application/ld+json"]')!.textContent!).offers
+      .availability,
+  ).toMatch(/OutOfStock$/);
+  expect(
+    screen
+      .getAllByRole("button", { name: DETAIL_COPY.reserved })
+      .every((button) => button.hasAttribute("disabled")),
+  ).toBe(true);
+});

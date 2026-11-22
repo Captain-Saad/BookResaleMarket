@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState, useRef, useMemo, type FormEvent } from "react";
 import { catalogClient, observePublic } from "@/lib/api/catalog";
 import { EMPTY_CATALOG_FILTERS } from "@/lib/constants";
 import { catalogFilters, catalogForm, catalogParams } from "@/lib/catalog";
@@ -12,7 +13,20 @@ const useCatalog = ({
   syncUrl = false,
 }: CatalogProps) => {
   const freshAt = useRef(0);
-  const [filters, setFilters] = useState<CatalogFilters>(initialFilters);
+  const [localFilters, setFilters] = useState<CatalogFilters>(initialFilters);
+  const searchParams = useSearchParams();
+  const urlKey = syncUrl && searchParams ? searchParams.toString() : null;
+  const urlState = useMemo(() => {
+    if (urlKey === null) return { filters: localFilters, error: "" };
+    try {
+      return { filters: catalogFilters(new URLSearchParams(urlKey)), error: "" };
+    } catch {
+      return { filters: { ...EMPTY_CATALOG_FILTERS }, error: copy.invalidFilters };
+    }
+  }, [urlKey, localFilters, copy.invalidFilters]);
+  const filters = urlState.filters;
+  const filterKey = catalogParams(filters).toString();
+  const [loadedKey, setLoadedKey] = useState(() => catalogParams(initialFilters).toString());
   const [page, setPage] = useState(initial);
   const [status, setStatus] = useState(initial ? LoadStatus.Ready : LoadStatus.Loading);
   const [error, setError] = useState(initialError);
@@ -27,6 +41,7 @@ const useCatalog = ({
         (result, started) => {
           freshAt.current = started;
           setPage(result);
+          setLoadedKey(filterKey);
           setStatus(LoadStatus.Ready);
           setMoreBusy(false);
           setError((current) => (current === copy.failed ? "" : current));
@@ -38,14 +53,15 @@ const useCatalog = ({
         },
         freshAt.current,
       ),
-    [filters, pages, attempt, copy.failed],
+    [filters, filterKey, pages, attempt, copy.failed],
   );
   useEffect(() => {
     if (!syncUrl) return;
     const restore = () => {
       freshAt.current = 0;
       try {
-        setFilters(catalogFilters(new URLSearchParams(window.location.search)));
+        if (urlKey === null)
+          setFilters(catalogFilters(new URLSearchParams(window.location.search)));
         setError("");
         setStatus(LoadStatus.Loading);
         setPages(1);
@@ -57,14 +73,14 @@ const useCatalog = ({
     };
     window.addEventListener("popstate", restore);
     return () => window.removeEventListener("popstate", restore);
-  }, [syncUrl, copy.invalidFilters]);
+  }, [syncUrl, urlKey, copy.invalidFilters]);
   const apply = (next: CatalogFilters) => {
     freshAt.current = 0;
     setError("");
     setStatus(LoadStatus.Loading);
     setMoreBusy(false);
     setPages(1);
-    setFilters(next);
+    if (urlKey === null) setFilters(next);
     setMobileOpen(false);
     if (syncUrl) {
       const query = catalogParams(next).toString();
@@ -94,8 +110,8 @@ const useCatalog = ({
     filters,
     items: page?.items ?? [],
     cursor: page?.nextCursor,
-    status,
-    error,
+    status: status === LoadStatus.Failed || loadedKey === filterKey ? status : LoadStatus.Loading,
+    error: urlState.error || error,
     mobileOpen,
     setMobileOpen,
     moreBusy,

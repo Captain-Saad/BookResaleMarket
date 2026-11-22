@@ -2,10 +2,19 @@ import Link from "next/link";
 import Badge from "@/components/ui/badge";
 import BookGallery from "@/components/domain/book-gallery";
 import BookPurchaseCard from "@/components/domain/book-purchase-card";
+import { bookStructuredData, serializeStructuredData } from "@/lib/seo";
 import type { ListingOverviewProps } from "@/lib/types";
 
-const ListingOverview = ({ book, copy }: ListingOverviewProps) => (
+const ListingOverview = ({ book, copy, canonicalUrl }: ListingOverviewProps) => (
   <main className="flex-1 px-4 pt-8 pb-44 md:pb-28 lg:pb-10">
+    {canonicalUrl && (
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: serializeStructuredData(bookStructuredData(book, canonicalUrl)),
+        }}
+      />
+    )}
     <div className="mx-auto flex w-full max-w-page flex-col gap-6">
       <Link
         href={copy.backHref}
