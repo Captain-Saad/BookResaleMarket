@@ -326,3 +326,7 @@ FR-1,2,5,6 → M2 · FR-3,4,10–14 → M8 · FR-7,8,9 → M3 (+M2 rules) · FR-
 
 ## 9. Start instruction
 Begin with **M0 only**. After finishing, print the M0 TEST GATE and wait for `APPROVED M0`. Also read `frontend.md`: frontend modules `F0…F13` are executed **after** the matching backend module is approved (mapping in frontend.md §9), under the same gate and git rules.
+
+
+### Public read connection mode (S3 runtime correction)
+An optional BOOKLOOP_PUBLIC_DATABASE_URL selects a direct/session-pool connection for catalog search, detail and public photos. Public queries run as individual autocommit statements with a per-connection prepared-statement cache; this is query-plan reuse, never result/availability caching. The transaction-pool URL and private transaction/session dependency remain unchanged. Reject Supabase shared-pool port6543 for the public connection. An omitted public URL retains the previous transactional behavior. Runtime private/public separation and fallback are tested against PostgreSQL.

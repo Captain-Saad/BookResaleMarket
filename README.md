@@ -71,3 +71,6 @@ Public `GET /api/v1/listings` supports text, ISBN, author, condition, fulfillmen
 `make perf-search` runs the explicit 50,000-listing p95 < 200 ms search gate against throwaway test-container data. This benchmark is separate from routine `make check`; Docker is required. The mocked frontend is connected in the subsequent S3 wiring steps.
 
 For the S3 stock simulation, run `cd backend && uv run python -m scripts.reserve_listing LISTING_UUID` using an active demo copy. This non-production CLI changes stock only; it creates no order/payment. The copy must disappear from search while its detail stays visible and unavailable. The normal database purchase lock applies, so use disposable demo data.
+
+
+Public catalog reads can use BOOKLOOP_PUBLIC_DATABASE_URL with a direct or session-pool connection. It must not point at Supabase transaction mode (port6543): cached prepared statements and autocommit reads require a stable session. When absent, public reads keep the original transactional pool. Authentication and mutations always keep their existing transactional connection. This setting avoids extra transaction round trips without caching availability or increasing its two-second lifetime.

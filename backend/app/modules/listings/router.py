@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import RedirectResponse, Response
 
-from app.core.deps import ClockDep, DbDep, public
+from app.core.deps import ClockDep, DbDep, PublicDbDep, public
 from app.core.errors import ServiceUnavailableError
 from app.core.rate_limit import enforce, rate_limit_by_ip
 from app.integrations.isbn.base import IsbnLookupProvider
@@ -227,7 +227,7 @@ def photo_urls(result: ListingResponse, request: Request) -> ListingResponse:
     "/listings", dependencies=[Depends(public), Depends(rate_limit_by_ip("public-search", 240, 60))]
 )
 async def search_listings(
-    request: Request, db: DbDep, filters: Annotated[ListingSearchQuery, Query()]
+    request: Request, db: PublicDbDep, filters: Annotated[ListingSearchQuery, Query()]
 ) -> PublicListingPage:
     return await service.search_public(
         db,
@@ -243,7 +243,7 @@ async def search_listings(
     dependencies=[Depends(public), Depends(rate_limit_by_ip("public-detail", 240, 60))],
 )
 async def public_listing_detail(
-    listing_id: UUID, request: Request, db: DbDep
+    listing_id: UUID, request: Request, db: PublicDbDep
 ) -> PublicListingDetail:
     return await service.detail_public(
         db,
@@ -260,7 +260,7 @@ async def public_listing_detail(
     dependencies=[Depends(public), Depends(rate_limit_by_ip("public-photo", 600, 60))],
 )
 async def public_listing_photo(
-    listing_id: UUID, photo_id: UUID, db: DbDep, storage: Storage
+    listing_id: UUID, photo_id: UUID, db: PublicDbDep, storage: Storage
 ) -> Response:
     data = await service.read_public_photo(db, listing_id, photo_id, storage)
     return Response(data, media_type="image/jpeg", headers={"Cache-Control": "private, no-store"})

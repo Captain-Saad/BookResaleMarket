@@ -41,6 +41,14 @@ async def get_db(request: Request) -> AsyncIterator[AsyncSession]:
         yield session
 
 
+async def get_public_db(request: Request) -> AsyncIterator[AsyncSession]:
+    engine: AsyncEngine | None = request.app.state.public_engine or request.app.state.engine
+    if engine is None:
+        raise ServiceUnavailableError(code="database_unavailable")
+    async with AsyncSession(engine, expire_on_commit=False) as session:
+        yield session
+
+
 SettingsDep = Annotated[Settings, Depends(get_settings_dep)]
 ClockDep = Annotated[Clock, Depends(get_clock)]
 NotifierDep = Annotated[Notifier, Depends(get_notifier)]
@@ -48,3 +56,5 @@ SellerVerificationDep = Annotated[
     SellerVerificationProvider, Depends(get_seller_verification_provider)
 ]
 DbDep = Annotated[AsyncSession, Depends(get_db)]
+
+PublicDbDep = Annotated[AsyncSession, Depends(get_public_db)]

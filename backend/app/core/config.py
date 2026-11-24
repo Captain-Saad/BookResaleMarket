@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     log_json: bool = True
     database_url: SecretStr | None = None
     database_direct_url: SecretStr | None = None
+    public_database_url: SecretStr | None = None
     redis_url: SecretStr | None = None
     readiness_timeout_seconds: float = 5.0
     cors_origins: list[str] = ["http://localhost:3000"]
@@ -48,6 +49,18 @@ class Settings(BaseSettings):
     @property
     def session_cookie_secure(self) -> bool:
         return self.env not in {"development", "test"}
+
+    @model_validator(mode="after")
+    def _public_connection_mode(self) -> Self:
+        if self.public_database_url and self.public_database_url.get_secret_value():
+            from sqlalchemy import make_url
+
+            url = make_url(self.public_database_url.get_secret_value())
+            if (url.host or "").endswith(".pooler.supabase.com") and url.port == 6543:
+                raise ValueError(
+                    "Public autocommit reads need a session pooler or direct connection"
+                )
+        return self
 
     @model_validator(mode="after")
     def _require_services_outside_tests(self) -> Self:
