@@ -84,6 +84,7 @@ export const observePublic = <T>(
     controller = new AbortController();
     const active = controller;
     const started = Date.now();
+    let succeeded = false;
     const timeout = setTimeout(() => {
       active.abort();
       if (!stopped) failed(new PublicRequestError(503));
@@ -96,6 +97,7 @@ export const observePublic = <T>(
       freshAt = started;
       next(value, started);
       expire();
+      succeeded = true;
     } catch (error) {
       retryDelay = Math.min(retryDelay * 2, PUBLIC_RETRY_MAX_MS);
       if (!stopped) {
@@ -105,7 +107,11 @@ export const observePublic = <T>(
     } finally {
       clearTimeout(timeout);
       running = false;
-      if (!stopped) refresh = setTimeout(run, retryDelay);
+      if (!stopped)
+        refresh = setTimeout(
+          run,
+          succeeded ? Math.max(0, PUBLIC_REFRESH_MS - (Date.now() - started)) : retryDelay,
+        );
     }
   };
   const foreground = () => {

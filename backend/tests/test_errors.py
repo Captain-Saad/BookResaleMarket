@@ -99,14 +99,14 @@ def test_unhandled_errors_hide_internals(failing_client: TestClient) -> None:
 def test_pooler_outage_is_safe_503(message: str) -> None:
     from sqlalchemy.exc import InternalError
 
-    from app.core.deps import get_db
+    from app.core.deps import get_public_db
 
     app = _app_with_failing_routes()
 
     async def unavailable_database() -> None:
         raise InternalError(None, None, RuntimeError(message + " secret-password"))
 
-    app.dependency_overrides[get_db] = unavailable_database
+    app.dependency_overrides[get_public_db] = unavailable_database
     with TestClient(app) as client:
         response = client.get("/api/v1/listings")
     assert response.status_code == 503

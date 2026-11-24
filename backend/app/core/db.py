@@ -24,19 +24,20 @@ def to_async_url(url: str) -> str:
     )
 
 
-def create_engine(database_url: str) -> AsyncEngine:
-    """Transaction-mode PgBouncer can't reuse prepared statements across transactions, so both
-    asyncpg's and SQLAlchemy's statement caches are disabled and every statement gets a unique
-    name."""
+def create_engine(database_url: str, *, autocommit: bool = False) -> AsyncEngine:
+    """Autocommit requires a direct/session connection; transaction-pooler writes retain
+    disabled statement caches and explicit transactions."""
+    isolation = {"isolation_level": "AUTOCOMMIT"} if autocommit else {}
     return create_async_engine(
         to_async_url(database_url),
         pool_pre_ping=True,
         hide_parameters=True,
         pool_size=5,
         max_overflow=5,
+        **isolation,
         connect_args={
             "statement_cache_size": 0,
-            "prepared_statement_cache_size": 0,
+            "prepared_statement_cache_size": 100 if autocommit else 0,
             "prepared_statement_name_func": lambda: f"__asyncpg_{uuid4()}__",
         },
     )

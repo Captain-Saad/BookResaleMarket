@@ -94,3 +94,19 @@ it("backs off failed reads and restores normal freshness polling after recovery"
   expect(load).toHaveBeenCalledTimes(4);
   stop();
 });
+
+it("starts successful refreshes on cadence despite network latency", async () => {
+  vi.useFakeTimers();
+  const load = vi.fn(() => new Promise<number>((resolve) => setTimeout(() => resolve(1), 800)));
+  const next = vi.fn();
+  const failed = vi.fn();
+  const stop = observePublic(load, next, failed);
+  await vi.advanceTimersByTimeAsync(1800);
+  expect(load).toHaveBeenCalledTimes(2);
+  expect(next).toHaveBeenCalledTimes(2);
+  expect(failed).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(200);
+  expect(load).toHaveBeenCalledTimes(3);
+  expect(failed).not.toHaveBeenCalled();
+  stop();
+});
