@@ -73,3 +73,6 @@ Public `GET /api/v1/listings` supports text, ISBN, author, condition, fulfillmen
 For the S3 stock simulation, run `cd backend && uv run python -m scripts.reserve_listing LISTING_UUID` using an active demo copy. This non-production CLI changes stock only; it creates no order/payment. The copy must disappear from search while its detail stays visible and unavailable. The normal database purchase lock applies, so use disposable demo data.
 
 Missing/private public API records return HTTP 404. The existing app-wide Next loading boundary can start a streamed frontend response with HTTP 200 before not-found resolves; the frontend still renders the not-found page with noindex metadata and no book structured data or private content.
+
+
+Public catalog reads can use BOOKLOOP_PUBLIC_DATABASE_URL with a direct or session-pool connection. It must not point at Supabase transaction mode (port6543): cached prepared statements and autocommit reads require a stable session. When absent, public reads keep the original transactional pool. Authentication and mutations always keep their existing transactional connection. This setting avoids extra transaction round trips without caching availability or increasing its two-second lifetime.

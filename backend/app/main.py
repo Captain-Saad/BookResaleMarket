@@ -46,11 +46,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         db_url, redis_url = settings.database_url, settings.redis_url
         app.state.engine = create_engine(db_url.get_secret_value()) if db_url else None
+        public_url = settings.public_database_url
+        app.state.public_engine = (
+            create_engine(public_url.get_secret_value(), autocommit=True)
+            if public_url and public_url.get_secret_value()
+            else None
+        )
         app.state.redis = (
             await create_redis_pool(redis_url.get_secret_value()) if redis_url else None
         )
         app.state.rate_limiter = RedisRateLimiter(app.state.redis) if app.state.redis else None
         yield
+        if app.state.public_engine is not None:
+            await app.state.public_engine.dispose()
         if app.state.engine is not None:
             await app.state.engine.dispose()
         if app.state.redis is not None:
